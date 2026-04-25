@@ -357,14 +357,16 @@ window.applyLanguage = () => {
 
     // 5. Update Built-in Category Phrases
     if (dict && dict.categories) {
-        // Swap out the built-in arrays with the translated ones
         window.categoryData['Medical'] = dict.categories.Medical || window.staticTranslations['en-US'].categories.Medical;
         window.categoryData['Feelings'] = dict.categories.Feelings || window.staticTranslations['en-US'].categories.Feelings;
         window.categoryData['Needs'] = dict.categories.Needs || window.staticTranslations['en-US'].categories.Needs;
-        // Add more categories here if you have them (e.g., 'People', 'Questions')
     }
 
-    // 6. Refresh the Suggestions Grid to show the new language
+    // 6. INSTANTLY REFRESH BOTH GRIDS (This fixes your category delay!)
+    if (typeof window.renderCategories === 'function') {
+        window.renderCategories();
+    }
+    
     if (window.currentCategory !== 'Doctor' && typeof window.renderSuggestions === 'function') {
         window.renderSuggestions();
     }
