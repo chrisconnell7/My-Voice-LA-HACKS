@@ -18,7 +18,7 @@ class Calibration:
 
         self.raw_samples = []
 
-        # Bounding Box Limits
+        # Bounding Box Limits (Now in absolute Centimeters)
         self.min_x = 0.0
         self.max_x = 0.0
         self.min_y = 0.0
@@ -28,35 +28,10 @@ class Calibration:
         self.smoothed_x = None
         self.smoothed_y = None
 
-    def _get_local_iris(self):
-        """Extracts the average iris position relative to the moving/rotating skull."""
-        if self.face.left_iris_3d is None or self.face.right_iris_3d is None:
-            return None
-
-        if not self.face.detection_result or not self.face.detection_result.facial_transformation_matrixes:
-            return None
-
-        # 1. Get raw absolute iris position in camera space (Averaged)
-        avg_iris_cam = np.mean(
-            [self.face.left_iris_3d, self.face.right_iris_3d], axis=0)
-
-        # 2. Extract the Head's Rigid Transformation Matrix
-        matrix = self.face.detection_result.facial_transformation_matrixes[0]
-        R = matrix[0:3, 0:3]  # Rotation
-        T = matrix[0:3, 3]   # Translation (Skull Center in cm)
-
-        # 3. Center the iris (Translation Immunity)
-        centered_iris = avg_iris_cam - T
-
-        # 4. Untwist the head (Rotation Immunity)
-        local_iris = R.T @ centered_iris
-
-        return local_iris
-
     def run(self, cam, face):
         self.face = face
         print("\n" + "="*50)
-        print("🚀 STARTING LOCAL IRIS BOUNDING BOX CALIBRATION")
+        print("🚀 STARTING PHYSICAL RAY INTERSECTION CALIBRATION")
         print("="*50)
 
         window_name = "Calibration"
@@ -95,9 +70,11 @@ class Calibration:
                 if frame is not None:
                     face.update(frame)
 
-                    local_iris = self._get_local_iris()
-                    if local_iris is not None:
-                        samples.append(local_iris)
+                    # Get the absolute physical intersection point on the Z=0 plane
+                    gaze_pt = face.get_raw_gaze_intersection()
+
+                    if gaze_pt is not None:
+                        samples.append(gaze_pt)
                         valid_frames += 1
 
                 if valid_frames % 4 == 0:
@@ -123,14 +100,14 @@ class Calibration:
         self._train()
 
     def _train(self):
-        print("\nCalculating Local Min/Max Boundaries...")
+        print("\nCalculating Physical Screen Boundaries (cm)...")
         points = np.array(self.raw_samples)
 
-        # X bounds
+        # X bounds (Centimeters)
         self.min_x = np.min(points[:, 0])
         self.max_x = np.max(points[:, 0])
 
-        # Y bounds
+        # Y bounds (Centimeters)
         self.min_y = np.min(points[:, 1])
         self.max_y = np.max(points[:, 1])
 
@@ -142,21 +119,24 @@ class Calibration:
 
         self.is_calibrated = True
         print(f"✅ CALIBRATION COMPLETE!")
-        print(f"   Local X Range: [{self.min_x:.4f}, {self.max_x:.4f}]")
-        print(f"   Local Y Range: [{self.min_y:.4f}, {self.max_y:.4f}]")
+        print(f"   Physical X Range: [{self.min_x:.2f}cm, {self.max_x:.2f}cm]")
+        print(f"   Physical Y Range: [{self.min_y:.2f}cm, {self.max_y:.2f}cm]")
 
     def get_screen_pixel(self):
         if not self.is_calibrated:
             return None
 
-        local_iris = self._get_local_iris()
-        if local_iris is None:
+        # Get the real-time physical intersection point
+        gaze_pt = self.face.get_raw_gaze_intersection()
+        if gaze_pt is None:
             return None
 
-        # 2. Manual interpolation to screen percentage
-        percent_x = (local_iris[0] - self.min_x) / (self.max_x - self.min_x)
-        percent_y = 1 - (local_iris[1] - self.min_y) / \
-            (self.max_y - self.min_y)
+        # 2. Interpolate based on the physical centimeter bounds
+        percent_x = (gaze_pt[0] - self.min_x) / (self.max_x - self.min_x)
+
+        # NOTE: Depending on your camera alignment, you may need to remove
+        # the '1 -' below if the Y-axis is naturally mirrored.
+        percent_y = 1 - (gaze_pt[1] - self.min_y) / (self.max_y - self.min_y)
 
         # 3. Scale to actual monitor pixels
         raw_screen_x = percent_x * self.screen_w

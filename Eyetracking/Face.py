@@ -90,7 +90,7 @@ class Face:
 
         self._update_eyeballs()
         self._update_irises()
-        print(self.left_iris_3d, self.right_iris_3d)
+        # print(self.left_iris_3d, self.right_iris_3d)
         self.left_graze_ray = self.left_iris_3d - self.left_eyeball_3d
         self.right_graze_ray = self.right_iris_3d - self.right_eyeball_3d
 
