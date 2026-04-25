@@ -66,6 +66,10 @@ window.staticTranslations = {
             "Eye Tracking Active": "Eye Tracking Active",
             "Navigation": "Navigation",
             "Look at button at the bottom to select it": "Look at button at the bottom to select it",
+            "Auto Listen": "Auto Listen",
+            "Clear History": "Clear History",
+            "History": "History",
+            "Change Language": "Change Language",
             // Category Names
             "QuickWords": "QuickWords", "Doctor": "Doctor", "Medical": "Medical", "Feelings": "Feelings", "Needs": "Needs", "People": "People", "Questions": "Questions"
         },
@@ -118,6 +122,10 @@ window.staticTranslations = {
             "Eye Tracking Active": "Seguimiento Ocular Activo",
             "Navigation": "Navegación",
             "Look at button at the bottom to select it": "Mira el botón en la parte inferior para seleccionarlo",
+            "Auto Listen": "Escucha Automática",
+            "History": "Historial",
+            "Clear History": "Borrar Historial",
+            "Change Language": "Cambiar Idioma",
             // Category Names
             "QuickWords": "Rápidas", "Doctor": "Médico", "Medical": "Salud", "Feelings": "Sentimientos", "Needs": "Necesidades", "People": "Personas", "Questions": "Preguntas"
         },
@@ -170,6 +178,10 @@ window.staticTranslations = {
             "Eye Tracking Active": "眼动追踪已激活",
             "Navigation": "导航",
             "Look at button at the bottom to select it": "查看底部的按钮以选择它",
+            "Auto Listen": "自动监听",
+            "History": "历史记录",
+            "Clear History": "清除历史记录",
+            "Change Language": "更改语言",
             // Category Names
             "QuickWords": "常用词", "Doctor": "医生", "Medical": "医疗", "Feelings": "感觉", "Needs": "需求", "People": "人物", "Questions": "问题"
         },

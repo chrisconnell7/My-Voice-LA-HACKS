@@ -787,18 +787,58 @@ body {
 .lang-apply-btn:hover { background: #0055aa; }
 
 /* Footer */
+/* --- FOOTER REDESIGN --- */
 .footer {
-    text-align: center;
-    color: #7c8ba3;
-    font-size: 13px;
-    margin-top: 0;
-    padding-top: 6px;
+    margin-top: auto; /* Pushes footer to the very bottom of the container */
+    padding-top: 15px;
     border-top: 2px solid #e0e8f8;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+    flex-direction: column;
+    gap: 12px;
     flex-shrink: 0;
+}
+
+.footer-controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* Matching the font and formatting of the rest of the page */
+.footer-btn {
+    padding: 8px 16px !important; /* Smaller than header buttons */
+    font-size: 14px !important;
+    height: 42px;
+    background: #ffffff;
+    border: 2px solid #e0e7ff;
+    transition: all 0.2s ease;
+}
+
+.footer-btn:hover {
+    background: #f0f7ff;
+    border-color: #0066cc;
+    transform: translateY(-2px);
+}
+
+.footer-btn.active {
+    background: #e3f2ff;
+    border-color: #0066cc;
+    color: #0066cc;
+}
+
+.footer-bottom-text {
+    text-align: center;
+    color: #7c8ba3;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Ensure footer disappears when keyboard is open to maintain "One Screen" rule */
+.keyboard-section.open ~ .footer {
+    display: none;
 }
 
 /* Responsive */

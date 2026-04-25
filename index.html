@@ -83,26 +83,27 @@
 
     <!-- Footer -->
     <div class="footer">
-        <span>ℹ️</span>
-        <div class="ui-text" data-en="Look at button at the bottom to select it">
-    Look at button at the bottom to select it
-        </div>
+    <div class="footer-controls">
+        <button class="icon-btn footer-btn" id="autoListenBtn" onclick="window.toggleAutoListen()">
+            <span class="icon">👂</span>
+            <span class="ui-text" data-en="Auto Listen">Auto Listen</span>
+        </button>
+        
+        <button class="icon-btn footer-btn" onclick="window.clearHistory()">
+            <span class="icon">🧹</span>
+            <span class="ui-text" data-en="Clear History">Clear History</span>
+        </button>
     </div>
-    <div class="auto-listen-wrap">
-        <span>Auto-Listen</span>
-        <label class="switch">
-            <input type="checkbox" id="autoListenToggle" onclick="window.toggleAutoListen()">
-            <span class="slider round"></span>
-        </label>
-    </div>
+</div>
 
-    <button class="doc-tab" id="tab-history" onclick="window.switchDocTab('history')">History</button>
+    <button class="doc-tab" id="tab-history" onclick="window.switchDocTab('history')">
+        <span class="ui-text" data-en="History">History</span>
+    </button>
 
     <div id="panel-history" class="doc-panel">
         <div id="historyContainer" class="history-log">
             <p style="color:#888; text-align:center;">History will appear here...</p>
         </div>
-        <button class="clear-btn" onclick="window.clearHistory()">Clear History</button>
     </div>
     
 </div>
