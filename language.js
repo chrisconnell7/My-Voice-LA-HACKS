@@ -1,90 +1,179 @@
 // language.js
-// ─── LANGUAGE & TRANSLATION ───────────────────────────────────────────────
-//
-// Design: English is always the source of truth (originalCategoryData +
-// doctorPrompts). When the user picks a non-English language we send ALL
-// translatable strings to Claude in one batch, cache the result under the
-// language code, and apply it. Switching back to English just restores the
-// originals — no API call needed.
-//
-// Cache keys:  translationCache[langCode] = {
-//   phrases:      { [catKey]: [{icon, text}, …] }
-//   catLabels:    { [catKey]: string }
-//   uiValues:     string[]
-//   doctorPhrases?: [{icon, text}, …]   — added lazily when prompts exist
-// }
+// ─── STATIC TRANSLATION DICTIONARY ────────────────────────────────────────
 
-const translationCache = {};
+const staticTranslations = {
+    'en-US': {
+        ui: {
+            "My Voice": "My Voice",
+            "Eye Tracking Active": "Eye Tracking Active",
+            "Keyboard": "Keyboard",
+            "Message": "Message",
+            "Speak": "Speak",
+            "Select Language": "🌐 Select Language",
+            "Doctor Prompts": "Doctor Prompts",
+            "Settings": "Settings",
+            "Help": "Help",
+            "You might want to say...": "You might want to say...",
+            "Categories": "Categories",
+            "Start typing to see neural suggestions...": "Start typing to see neural suggestions...",
+            "Back": "Back",
+            "Clear": "Clear"
+        },
+        // English defaults to the original categoryData in data.js
+    },
+    'es-US': {
+        ui: {
+            "My Voice": "Mi Voz",
+            "Eye Tracking Active": "Seguimiento Ocular Activo",
+            "Keyboard": "Teclado",
+            "Message": "Mensaje",
+            "Speak": "Hablar",
+            "Select Language": "🌐 Seleccionar Idioma",
+            "Doctor Prompts": "Frases Médicas",
+            "Settings": "Ajustes",
+            "Help": "Ayuda",
+            "You might want to say...": "Tal vez quieras decir...",
+            "Categories": "Categorías",
+            "Start typing to see neural suggestions...": "Escribe para ver sugerencias...",
+            "Back": "Atrás",
+            "Clear": "Borrar"
+        },
+        categories: {
+            Medical: [
+                { icon: '🧍', text: "Tengo dolor." },
+                { icon: '💔', text: "Tengo dolor en el pecho." },
+                { icon: '🤢', text: "Tengo náuseas." },
+                { icon: '😮‍💨', text: "No puedo respirar bien." },
+                { icon: '🤕', text: "Me duele la cabeza." },
+                { icon: '🤧', text: "Me siento mareado." },
+                { icon: '💉', text: "Necesito un analgésico." }
+            ],
+            Feelings: [
+                { icon: '😕', text: "Estoy incómodo." },
+                { icon: '😢', text: "Estoy triste." },
+                { icon: '😟', text: "Estoy ansioso." },
+                { icon: '😊', text: "Me siento bien." },
+                { icon: '😴', text: "Estoy cansado." },
+                { icon: '😣', text: "Tengo dolor." },
+                { icon: '😌', text: "Me siento tranquilo." }
+            ],
+            Needs: [
+                { icon: '🖐️', text: "Necesito ayuda." },
+                { icon: '🥤', text: "Tengo sed." },
+                { icon: '🍽️', text: "Tengo hambre." },
+                { icon: '🛏️', text: "Necesito descansar." },
+                { icon: '🚽', text: "Necesito usar el baño." }
+            ]
+        }
+    },
+    'zh-CN': {
+        ui: {
+            "My Voice": "我的声音",
+            "Eye Tracking Active": "眼动追踪开启",
+            "Keyboard": "键盘",
+            "Message": "信息",
+            "Speak": "说话",
+            "Select Language": "🌐 选择语言",
+            "Doctor Prompts": "医生提示",
+            "Settings": "设置",
+            "Help": "帮助",
+            "You might want to say...": "你可能想说...",
+            "Categories": "类别",
+            "Start typing to see neural suggestions...": "开始输入以查看建议...",
+            "Back": "退格",
+            "Clear": "清除"
+        },
+        categories: {
+            Medical: [
+                { icon: '🧍', text: "我很痛。" },
+                { icon: '💔', text: "我胸痛。" },
+                { icon: '🤢', text: "我觉得恶心。" },
+                { icon: '😮‍💨', text: "我呼吸不畅。" },
+                { icon: '🤕', text: "我头痛。" },
+                { icon: '🤧', text: "我觉得头晕。" },
+                { icon: '💉', text: "我需要止痛药。" }
+            ],
+            Feelings: [
+                { icon: '😕', text: "我不舒服。" },
+                { icon: '😢', text: "我很伤心。" },
+                { icon: '😟', text: "我很焦虑。" },
+                { icon: '😊', text: "我感觉很好。" },
+                { icon: '😴', text: "我很累。" },
+                { icon: '😣', text: "我很痛。" },
+                { icon: '😌', text: "我觉得很平静。" }
+            ],
+            Needs: [
+                { icon: '🖐️', text: "我需要帮助。" },
+                { icon: '🥤', text: "我渴了。" },
+                { icon: '🍽️', text: "我饿了。" },
+                { icon: '🛏️', text: "我需要休息。" },
+                { icon: '🚽', text: "我要上厕所。" }
+            ]
+        }
+    }
+};
 
-// ─── Snapshot of the original English category phrases (excluding Doctor,
-//     which is user-managed and translated separately).
-const originalCategoryData = JSON.parse(JSON.stringify(
-    Object.fromEntries(Object.entries(categoryData).filter(([k]) => k !== 'Doctor'))
-));
+// ─── LANGUAGE APPLICATION LOGIC ─────────────────────────────────────────────
 
-// The fixed UI strings we translate (order matters — applyUIStrings uses indices).
-const UI_STRINGS_EN = [
-    'Message',
-    'AI Suggested Continuations',
-    'Suggestions based on your message',
-    'Start typing or selecting phrases to see AI suggestions…',
-    'You might want to say:',
-    'Browse by category:',
-    'Look at a button for a moment to select it',
-    'Speak',
-    'Keyboard',
-];
-
-
-// ─── LANGUAGE PICKER UI ───────────────────────────────────────────────────
-
-function renderRegionTabs() {
-    const tabs = document.getElementById('langRegionTabs');
-    if (tabs) tabs.style.display = 'none';
-}
-
-function renderLangList() {
-    const query = (document.getElementById('langSearch').value || '').toLowerCase();
-    const list = document.getElementById('langList');
-    list.innerHTML = '';
-
-    const filtered = languages.filter(l => {
-        const matchRegion = activeRegion === 'All' || l.region === activeRegion;
-        const matchSearch = !query ||
-            l.native.toLowerCase().includes(query) ||
-            l.english.toLowerCase().includes(query);
-        return matchRegion && matchSearch;
-    });
-
-    if (!filtered.length) {
-        list.innerHTML = '<div style="color:#aaa;text-align:center;padding:24px;font-size:14px;">No languages found.</div>';
-        return;
+function applyLanguage() {
+    closeLangModal();
+    const langCode = currentLang.code;
+    
+    // 1. Create a backup of the English defaults on the very first run
+    if (!staticTranslations['en-US'].categories) {
+        staticTranslations['en-US'].categories = {
+            Medical: [...categoryData['Medical']],
+            Feelings: [...categoryData['Feelings']],
+            Needs: [...categoryData['Needs']]
+        };
     }
 
-    filtered.forEach(l => {
-        const item = document.createElement('div');
-        item.className = 'lang-item' + (l.code === pendingLang.code ? ' selected' : '');
-        item.innerHTML = `
-            <span class="lang-item-flag">${l.flag}</span>
-            <div class="lang-item-info">
-                <div class="lang-item-native">${l.native}</div>
-                <div class="lang-item-english">${l.english}</div>
-            </div>
-            <span class="lang-item-check">✓</span>
-        `;
-        item.onclick = () => { pendingLang = l; renderLangList(); };
-        list.appendChild(item);
-    });
-}
+    // Fallback to English dictionary if something breaks
+    const dict = staticTranslations[langCode] || staticTranslations['en-US'];
 
-function filterLanguages() { renderLangList(); }
+    // 2. Safely apply categories for ALL languages (no more if/else block)
+    categoryData['Medical'] = dict.categories.Medical;
+    categoryData['Feelings'] = dict.categories.Feelings;
+    categoryData['Needs'] = dict.categories.Needs;
+
+    // 3. Re-render the grid if we are looking at a standard category
+    if (currentCategory !== 'Doctor' && typeof renderSuggestions === 'function') {
+        renderSuggestions();
+    }
+
+    // 4. Update all Static UI Elements tagged with .ui-text and data-en
+    const uiElements = document.querySelectorAll('.ui-text');
+    uiElements.forEach(el => {
+        const englishKey = el.getAttribute('data-en');
+        if (dict.ui[englishKey]) {
+            el.textContent = dict.ui[englishKey];
+        } else if (langCode === 'en-US') {
+            // Restore English
+            el.textContent = englishKey;
+        }
+    });
+
+    // 5. Update the Keyboard Layout
+    if (typeof keyboardVisible !== 'undefined' && keyboardVisible) {
+        if (typeof updateKeyboardLabel === 'function') updateKeyboardLabel();
+        if (typeof buildKeyboard === 'function') buildKeyboard();
+    }
+}
+// ─── LANGUAGE MODAL UI LOGIC ─────────────────────────────────────────────
+
+// We removed the duplicate "let currentLang" declaration here. 
+// It safely relies on the one already defined in data.js!
 
 function openLangModal() {
-    pendingLang = currentLang;
-    activeRegion = 'All';
-    document.getElementById('langSearch').value = '';
-    renderRegionTabs();
-    renderLangList();
+    const searchInput = document.getElementById('langSearch');
+    if (searchInput) searchInput.value = '';
+    
+    // Fallback just in case currentLang was somehow lost
+    if (typeof currentLang === 'undefined' || !currentLang) {
+        window.currentLang = languages[0];
+    }
+
+    renderLanguageList();
     document.getElementById('langModal').classList.add('open');
 }
 
@@ -92,267 +181,50 @@ function closeLangModal() {
     document.getElementById('langModal').classList.remove('open');
 }
 
-document.getElementById('langModal').addEventListener('click', function(e) {
-    if (e.target === this) closeLangModal();
-});
+function renderLanguageList(filterText = '') {
+    const list = document.getElementById('langList');
+    if (!list) return;
+    list.innerHTML = '';
+    
+    const term = filterText.toLowerCase();
+    
+    // Filter the 3 languages based on the search box
+    const filtered = languages.filter(l => 
+        l.native.toLowerCase().includes(term) || 
+        l.english.toLowerCase().includes(term)
+    );
 
-
-// ─── APPLY LANGUAGE (entry point from the modal "Apply" button) ───────────
-
-async function applyLanguage() {
-    if (!pendingLang) return;
-    currentLang = pendingLang;
-    closeLangModal();
-    await translatePageToLanguage(currentLang);
+    // Draw the buttons for each language
+    filtered.forEach(lang => {
+        const div = document.createElement('div');
+        // Highlight the currently selected language
+        const isSelected = (typeof currentLang !== 'undefined' && currentLang.code === lang.code);
+        div.className = 'lang-item' + (isSelected ? ' selected' : '');
+        div.style.padding = '15px';
+        div.style.margin = '10px 0';
+        div.style.borderRadius = '10px';
+        div.style.border = '1px solid #eee';
+        div.style.cursor = 'pointer';
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.gap = '15px';
+        div.style.fontSize = '18px';
+        
+        div.innerHTML = `<span style="font-size: 24px;">${lang.flag}</span> <span style="font-weight: 600;">${lang.native} (${lang.english})</span>`;
+        
+        // When clicked, update the global currentLang variable and redraw
+        div.onclick = () => {
+            currentLang = lang;
+            renderLanguageList(filterText); 
+        };
+        
+        list.appendChild(div);
+    });
 }
 
-
-// ─── CORE TRANSLATION PIPELINE ───────────────────────────────────────────
-
-async function translatePageToLanguage(lang) {
-    // English is the source — just restore originals.
-    if (lang.code === 'en-US') {
-        restoreEnglishUI();
-        return;
-    }
-
-    showTranslatingBanner(true);
-
-    try {
-        // Build (or refresh) the cache entry for this language.
-        const cache = await buildTranslationCache(lang);
-        applyTranslation(cache);
-    } catch (e) {
-        console.error('Translation failed:', e);
-        // Fall back gracefully — leave whatever was already rendered.
-    } finally {
-        showTranslatingBanner(false);
-    }
-}
-
-/**
- * Returns a fully-populated translation cache entry for `lang`.
- *
- * We always translate the fixed phrases + UI strings fresh when first
- * requested (cached thereafter). Doctor prompts are included if they
- * exist and haven't been translated into this language yet.
- */
-async function buildTranslationCache(lang) {
-    const code = lang.code;
-    const existing = translationCache[code];
-
-    // Collect what needs translating.
-    const needsFullTranslation = !existing;
-    const currentDoctorTexts = doctorPrompts.map(p => p.text);
-    const cachedDoctorTexts  = existing?.doctorSourceTexts || [];
-    const needsDoctorUpdate  = JSON.stringify(currentDoctorTexts) !== JSON.stringify(cachedDoctorTexts);
-
-    if (!needsFullTranslation && !needsDoctorUpdate) {
-        return existing; // Already fully up-to-date.
-    }
-
-    // ── Assemble the payload ──────────────────────────────────────────────
-    // Flatten phrases to a plain array so the JSON stays small and the
-    // model doesn't get confused by nested objects.
-    const phraseTexts = [];
-    const phraseIndex = {}; // catKey -> [startIdx, count]
-    Object.entries(originalCategoryData).forEach(([cat, phrases]) => {
-        phraseIndex[cat] = [phraseTexts.length, phrases.length];
-        phrases.forEach(p => phraseTexts.push(p.text));
-    });
-
-    const catKeys = categoryMeta.filter(m => m.key !== 'Doctor').map(m => m.key);
-
-    const payload = {
-        phraseTexts,          // flat array of English phrase texts
-        catKeys,              // category label strings to translate
-        uiStrings: UI_STRINGS_EN,
-        doctorTexts: currentDoctorTexts,
-    };
-
-    // ── Single API call ───────────────────────────────────────────────────
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 4000,
-            system: `You are a medical translation assistant specialising in AAC (Augmentative and Alternative Communication) for hospital patients.
-
-Translate every string in the input JSON into ${lang.english} (${lang.native}).
-Rules:
-- Keep translations short and natural — these appear on buttons and UI labels.
-- Preserve first-person phrasing for patient phrases (e.g. "I am in pain").
-- Keep medical accuracy.
-- Return ONLY a valid JSON object — no markdown fences, no preamble — with exactly these keys:
-  {
-    "phraseTexts": [...],   // same length as input phraseTexts
-    "catKeys":    [...],   // same length as input catKeys
-    "uiStrings":  [...],   // same length as input uiStrings
-    "doctorTexts":[...]    // same length as input doctorTexts
-  }`,
-            messages: [{
-                role: 'user',
-                content: JSON.stringify(payload),
-            }],
-        }),
-    });
-
-    const data = await response.json();
-    const raw  = data.content.map(i => i.text || '').join('');
-    const result = JSON.parse(raw.replace(/```json|```/g, '').trim());
-
-    // ── Re-assemble into the cache structure ─────────────────────────────
-    const cache = {
-        phrases: {},
-        catLabels: {},
-        uiValues: result.uiStrings,
-        doctorPhrases: doctorPrompts.map((p, i) => ({
-            icon: p.icon,
-            text: result.doctorTexts[i] || p.text,
-        })),
-        doctorSourceTexts: currentDoctorTexts, // track what we translated
-    };
-
-    Object.entries(originalCategoryData).forEach(([cat, phrases]) => {
-        const [start, count] = phraseIndex[cat];
-        cache.phrases[cat] = phrases.map((p, i) => ({
-            icon: p.icon,
-            text: result.phraseTexts[start + i] || p.text,
-        }));
-    });
-
-    catKeys.forEach((key, i) => {
-        cache.catLabels[key] = result.catKeys[i] || key;
-    });
-
-    translationCache[code] = cache;
-    return cache;
-}
-
-
-// ─── APPLY / RESTORE ──────────────────────────────────────────────────────
-
-function applyTranslation(cache) {
-    // Phrase tiles
-    Object.entries(cache.phrases).forEach(([cat, phrases]) => {
-        categoryData[cat] = phrases;
-    });
-
-    // Category button labels
-    categoryMeta.forEach(m => {
-        if (m.key !== 'Doctor') {
-            m._displayKey = cache.catLabels[m.key] || null;
-        }
-    });
-
-    // Doctor prompts (translated)
-    if (cache.doctorPhrases && cache.doctorPhrases.length > 0) {
-        categoryData['Doctor'] = cache.doctorPhrases;
-    }
-
-    // Static UI strings
-    applyUIStrings(cache.uiValues);
-
-    // Refresh rendered components
-    if (typeof updateKeyboardLabel === 'function') updateKeyboardLabel();
-    if (typeof renderCategories   === 'function') renderCategories();
-    if (typeof renderSuggestions  === 'function') renderSuggestions();
-    if (typeof clearAISuggestions === 'function') clearAISuggestions();
-    if (typeof buildKeyboard      === 'function' && typeof keyboardVisible !== 'undefined' && keyboardVisible) buildKeyboard();
-}
-
-function restoreEnglishUI() {
-    // Reset phrases to original English
-    Object.entries(originalCategoryData).forEach(([cat, phrases]) => {
-        categoryData[cat] = phrases.map(p => ({ ...p }));
-    });
-
-    // Reset category display labels
-    categoryMeta.forEach(m => { m._displayKey = null; });
-
-    // Restore doctor prompts (English)
-    if (typeof syncDoctorCategoryFull === 'function') syncDoctorCategoryFull();
-
-    applyUIStrings(null);
-
-    if (typeof updateKeyboardLabel === 'function') updateKeyboardLabel();
-    if (typeof renderCategories   === 'function') renderCategories();
-    if (typeof renderSuggestions  === 'function') renderSuggestions();
-    if (typeof clearAISuggestions === 'function') clearAISuggestions();
-    if (typeof buildKeyboard      === 'function' && typeof keyboardVisible !== 'undefined' && keyboardVisible) buildKeyboard();
-}
-
-
-// ─── UI STRING HELPERS ────────────────────────────────────────────────────
-
-function applyUIStrings(v) {
-    const s = v || UI_STRINGS_EN;
-    const safe = i => s[i] || UI_STRINGS_EN[i];
-    const el   = (sel, txt) => { const e = document.querySelector(sel); if (e) e.textContent = txt; };
-
-    el('.message-section .section-label',    safe(0));
-    el('.ai-section .section-label',         safe(1));
-
-    const aiLbl = document.querySelector('.ai-label span:nth-child(2)');
-    if (aiLbl) aiLbl.textContent = safe(2);
-
-    const aiPh = document.querySelector('#aiSuggestions .ai-placeholder');
-    if (aiPh) aiPh.textContent = safe(3);
-
-    el('.suggestions-section .section-label',  safe(4));
-    el('.categories-section .section-label',   safe(5));
-
-    const footer = document.querySelector('.footer span:last-child');
-    if (footer) footer.textContent = ' ' + safe(6);
-
-    const speakSpan = document.querySelector('.speak-btn span:last-child');
-    if (speakSpan) speakSpan.textContent = safe(7);
-
-    const kbSpan = document.querySelector('.keyboard-toggle-btn span:last-child');
-    if (kbSpan) kbSpan.textContent = safe(8);
-}
-
-function showTranslatingBanner(show) {
-    let b = document.getElementById('translatingBanner');
-    if (show && !b) {
-        b = document.createElement('div');
-        b.id = 'translatingBanner';
-        b.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#0066cc;color:white;text-align:center;padding:10px;font-weight:600;z-index:9999;font-size:15px;';
-        b.textContent = 'Translating…';
-        document.body.appendChild(b);
-    } else if (!show && b) {
-        b.remove();
-    }
-}
-
-
-// ─── DOCTOR PROMPT TRANSLATION HELPER ────────────────────────────────────
-// Called by doctor.js → syncDoctorCategoryFull() whenever prompts change
-// while a non-English language is active.
-
-async function translateDoctorPromptsIfNeeded() {
-    if (currentLang.code === 'en-US' || doctorPrompts.length === 0) return;
-
-    const code = currentLang.code;
-
-    // Invalidate the cached doctor phrases so buildTranslationCache re-fetches them.
-    if (translationCache[code]) {
-        translationCache[code].doctorSourceTexts = null;
-    }
-
-    // Re-translate (only doctor section changes, but we reuse the full pipeline
-    // so the cache stays consistent).
-    showTranslatingBanner(true);
-    try {
-        const cache = await buildTranslationCache(currentLang);
-        categoryData['Doctor'] = cache.doctorPhrases;
-        if (typeof renderSuggestions === 'function' && currentCategory === 'Doctor') {
-            renderSuggestions();
-        }
-    } catch(e) {
-        console.error('Doctor prompt translation failed:', e);
-    } finally {
-        showTranslatingBanner(false);
+function filterLanguages() {
+    const searchInput = document.getElementById('langSearch');
+    if (searchInput) {
+        renderLanguageList(searchInput.value);
     }
 }
