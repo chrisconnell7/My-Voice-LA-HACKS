@@ -356,10 +356,16 @@ window.applyLanguage = () => {
     });
 
     // 5. Update Built-in Category Phrases
+    // 5. Update Built-in Category Phrases
     if (dict && dict.categories) {
-        window.categoryData['Medical'] = dict.categories.Medical || window.staticTranslations['en-US'].categories.Medical;
-        window.categoryData['Feelings'] = dict.categories.Feelings || window.staticTranslations['en-US'].categories.Feelings;
-        window.categoryData['Needs'] = dict.categories.Needs || window.staticTranslations['en-US'].categories.Needs;
+        // Swap out ALL built-in arrays with the translated ones
+        const enDefaults = window.staticTranslations['en-US'].categories;
+        window.categoryData['QuickWords'] = dict.categories.QuickWords || enDefaults.QuickWords;
+        window.categoryData['Medical'] = dict.categories.Medical || enDefaults.Medical;
+        window.categoryData['Feelings'] = dict.categories.Feelings || enDefaults.Feelings;
+        window.categoryData['Needs'] = dict.categories.Needs || enDefaults.Needs;
+        window.categoryData['People'] = dict.categories.People || enDefaults.People;
+        window.categoryData['Questions'] = dict.categories.Questions || enDefaults.Questions;
     }
 
     // 6. INSTANTLY REFRESH BOTH GRIDS (This fixes your category delay!)
@@ -378,8 +384,8 @@ window.applyLanguage = () => {
 };
 // ─── CATEGORY & SUGGESTION LOGIC ────────────────────────────────────────
 
-// Default to 'Medical' if no category is selected yet
-window.currentCategory = window.currentCategory || 'Medical';
+// Default to 'QuickWords' if no category is selected yet
+window.currentCategory = window.currentCategory || 'QuickWords';
 
 window.renderCategories = () => {
     const grid = document.getElementById('categoriesGrid');
@@ -412,10 +418,8 @@ window.setCategory = (categoryName) => {
         window.renderCategories();
     }
     
-    // 3. Render the specific phrases for this category
-    if (categoryName === 'Doctor' && typeof window.openDoctorModal === 'function') {
-        window.openDoctorModal();
-    } else {
+    // 3. Render the specific phrases for this category (No modal pop-up anymore!)
+    if (typeof window.renderSuggestions === 'function') {
         window.renderSuggestions();
     }
 };
@@ -424,22 +428,26 @@ window.renderSuggestions = () => {
     const grid = document.getElementById('suggestionsGrid');
     if (!grid) return;
     
-    // Safety check: ensure categoryData exists
-    if (!window.categoryData || !window.categoryData[window.currentCategory]) {
-        grid.innerHTML = '<div style="padding: 20px; color: #666;">No phrases found for this category.</div>';
+    // 🌟 DYNAMIC OVERRIDE: If 'Doctor' is selected, pull directly from the doctor's saved prompts!
+    if (window.currentCategory === 'Doctor') {
+        window.categoryData['Doctor'] = window.doctorPrompts || [];
+    }
+    
+    // Safety check: ensure categoryData exists and has phrases
+    if (!window.categoryData || !window.categoryData[window.currentCategory] || window.categoryData[window.currentCategory].length === 0) {
+        grid.innerHTML = '<div style="padding: 20px; color: #666;">No phrases found here.</div>';
         return;
     }
 
     const phrases = window.categoryData[window.currentCategory];
     
-    // Build the buttons using data-text to perfectly protect against apostrophes
+    // Build the buttons (boxes) using data-text to perfectly protect against apostrophes
     grid.innerHTML = phrases.map(phrase => {
-        // Escape double quotes just in case, single quotes (apostrophes) are now 100% safe
         const safeText = phrase.text.replace(/"/g, '&quot;');
         
         return `
             <button class="suggestion-btn" data-text="${safeText}" onclick="window.addToMessage(this.dataset.text)">
-                <span class="suggestion-icon">${phrase.icon}</span>
+                <span class="suggestion-icon">${phrase.icon || '📝'}</span>
                 <span>${phrase.text}</span>
             </button>
         `;
