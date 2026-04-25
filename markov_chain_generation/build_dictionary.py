@@ -1,14 +1,12 @@
 import csv
 import json
 import re
-import os # Make sure to add this!
+import os
 from collections import defaultdict, Counter
 
-class MarkovChainBuilder:
-    def __init__(self, n_gram_size=2):
-        # n_gram_size=2 means it looks at the previous 1 word to predict the next.
-        # n_gram_size=3 would look at the previous 2 words.
-        self.n_gram_size = n_gram_size
+class SmartMarkovBuilder:
+    def __init__(self):
+        # We no longer need to pass n_gram_size, as we are hardcoding both levels
         self.chain = defaultdict(Counter)
 
     def clean_text(self, text):
@@ -18,15 +16,17 @@ class MarkovChainBuilder:
         return text.split()
 
     def add_to_chain(self, tokens):
-        """Builds n-gram transitions from a list of tokens."""
-        if len(tokens) < self.n_gram_size:
-            return
+        """Builds both 1-word and 2-word transitions for fallback logic."""
+        # 1. Build 1-word history (Bigrams)
+        for i in range(len(tokens) - 1):
+            state = tokens[i]
+            next_word = tokens[i + 1]
+            self.chain[state][next_word] += 1
             
-        for i in range(len(tokens) - self.n_gram_size + 1):
-            # The 'state' is the preceding words (e.g., "i am")
-            state = " ".join(tokens[i : i + self.n_gram_size - 1])
-            # The 'next_word' is what follows
-            next_word = tokens[i + self.n_gram_size - 1]
+        # 2. Build 2-word history (Trigrams)
+        for i in range(len(tokens) - 2):
+            state = f"{tokens[i]} {tokens[i+1]}"
+            next_word = tokens[i + 2]
             self.chain[state][next_word] += 1
 
     def process_csv(self, file_path, target_column='Patient'):
@@ -41,30 +41,25 @@ class MarkovChainBuilder:
 
     def export_json(self, output_path):
         """Sorts the predictions by frequency and exports to JSON."""
-        print(f"Exporting dictionary to {output_path}...")
+        print(f"Exporting multi-level dictionary to {output_path}...")
         optimized_dict = {}
         
         for state, counter in self.chain.items():
-            # Get the top words sorted by frequency to keep the JSON small
-            # The UI only needs 4 autocomplete chips, so we store the top 10 for safety
+            # Keep top 10 words for every state
             top_words = [word for word, count in counter.most_common(10)]
             optimized_dict[state] = top_words
 
         with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(optimized_dict, f, separators=(',', ':')) # Minified
+            json.dump(optimized_dict, f, separators=(',', ':'))
         print("Export complete.")
 
 # Execution
 if __name__ == "__main__":
-    builder = MarkovChainBuilder(n_gram_size=2)
+    builder = SmartMarkovBuilder()
     
-    # Automatically find the folder this script is sitting in
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    # Build the full paths for the CSV and JSON files
     csv_path = os.path.join(script_dir, 'medical_qa.csv')
     json_path = os.path.join(script_dir, 'markov_dictionary.json')
     
-    # Run the builder with the correct absolute paths
     builder.process_csv(csv_path, target_column='Patient')
     builder.export_json(json_path)

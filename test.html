@@ -1,39 +1,201 @@
-<script type="module">
-        // 1. Updated path to point to the scripts folder
-        import { NgramEngine } from './scripts/ngram-engine.js';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Voice UI Test</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            padding: 20px; 
+            max-width: 900px; 
+            margin: 0 auto; 
+        }
+        .section { 
+            background: #f9f9f9; 
+            padding: 20px; 
+            margin-bottom: 30px; 
+            border-radius: 8px; 
+            border: 1px solid #ddd; 
+        }
+        input[type="text"], textarea { 
+            width: 100%; 
+            box-sizing: border-box; 
+            font-size: 18px; 
+            padding: 10px; 
+            margin-top: 10px; 
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button { 
+            padding: 15px 25px; 
+            font-size: 18px; 
+            cursor: pointer; 
+            border-radius: 8px; 
+            border: 1px solid #ccc; 
+            background: white; 
+            transition: all 0.2s;
+        }
+        button:hover { 
+            background: #eee; 
+        }
+        .chip-container { 
+            display: flex; 
+            gap: 10px; 
+            flex-wrap: wrap; 
+            margin-top: 15px; 
+        }
+        .quick-phrase { 
+            background: #e3f2fd; 
+            border-color: #2196f3; 
+            color: #0d47a1; 
+            font-weight: bold; 
+        }
+        .quick-phrase:hover {
+            background: #bbdefb;
+        }
+        .gemma-boosted { 
+            border: 3px solid #4285F4; 
+            background-color: #E8F0FE; 
+        }
+    </style>
+</head>
+<body>
+    <h1>My Voice Application 🏥</h1>
 
-        // 2. Updated path to point to the data folder
+    <!-- 1. Doctor's Setup Area -->
+    <div class="section">
+        <h3>Doctor's Setup (Gemma Context Ingestion)</h3>
+        <p>Paste the patient's clinical summary here to generate smart context.</p>
+        <textarea id="doctor-notes" rows="4" placeholder="e.g., Patient is recovering from knee surgery. Experiencing stiffness and requesting ice and water..."></textarea>
+        <button id="analyze-btn" style="margin-top: 15px; background: #4CAF50; color: white; border: none; font-weight: bold;">Analyze with Gemma</button>
+        <p id="status-text" style="font-weight: bold; margin-top: 15px;"></p>
+    </div>
+
+    <!-- 2. Quick Phrases Area (NEW) -->
+    <div class="section" id="quick-phrases-section" style="display: none;">
+        <h3>⚡ Gemma Quick Phrases</h3>
+        <p>Generated based on the doctor's notes. Click to instantly type:</p>
+        <div id="quick-phrases-container" class="chip-container"></div>
+    </div>
+
+    <!-- 3. Patient Typing Interface -->
+    <div class="section">
+        <h3>⌨️ Patient Interface (Smart Predictive Typing)</h3>
+        <input type="text" id="patient-input" placeholder="Start typing here...">
+        <div id="predictions-container" class="chip-container"></div>
+    </div>
+
+    <script type="module">
+        import { NgramEngine } from './scripts/ngram-engine.js';
+        
+        // Initialize the Markov Engine
         const engine = new NgramEngine('./data/markov_dictionary.json');
         
         const inputField = document.getElementById('patient-input');
         const predictionsContainer = document.getElementById('predictions-container');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const doctorNotes = document.getElementById('doctor-notes');
+        const statusText = document.getElementById('status-text');
+        const quickPhrasesSection = document.getElementById('quick-phrases-section');
+        const quickPhrasesContainer = document.getElementById('quick-phrases-container');
 
-        // Initialize engine
+        let gemmaContext = [];
+
+        // Load the Markov JSON Dictionary
         await engine.load();
 
-        // Listen for typing events
+        // --- Handle Gemma Analysis (Hitting your server.py) ---
+        analyzeBtn.addEventListener('click', async () => {
+            const text = doctorNotes.value.trim();
+            if (!text) {
+                statusText.textContent = "Please enter some notes first!";
+                statusText.style.color = "red";
+                return;
+            }
+
+            statusText.textContent = "Gemma is analyzing... please wait.";
+            statusText.style.color = "#ff9800";
+            analyzeBtn.disabled = true;
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/analyze-notes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notes: text })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // 1. Save context words for Markov boosting
+                    gemmaContext = data.contextWords || [];
+                    statusText.textContent = `✅ Context Loaded! Keywords: ${gemmaContext.join(', ')}`;
+                    statusText.style.color = "green";
+                    
+                    // 2. Render Quick Phrases
+                    const phrases = data.quickPhrases || [];
+                    quickPhrasesContainer.innerHTML = ''; // clear old ones
+                    
+                    if (phrases.length > 0) {
+                        quickPhrasesSection.style.display = 'block';
+                        phrases.forEach(phrase => {
+                            const btn = document.createElement('button');
+                            btn.className = 'quick-phrase';
+                            btn.textContent = phrase;
+                            btn.onclick = () => {
+                                // Add the quick phrase to the input box
+                                inputField.value = phrase + " ";
+                                inputField.focus();
+                                inputField.dispatchEvent(new Event('input'));
+                            };
+                            quickPhrasesContainer.appendChild(btn);
+                        });
+                    }
+
+                    // Trigger input event to update markov chips with the new Gemma context
+                    inputField.dispatchEvent(new Event('input')); 
+                } else {
+                    statusText.textContent = `❌ Error: ${data.error || 'Failed to parse'}`;
+                    statusText.style.color = "red";
+                }
+            } catch (error) {
+                console.error(error);
+                statusText.textContent = "❌ Server error. Make sure your Python terminal is running server.py!";
+                statusText.style.color = "red";
+            }
+
+            analyzeBtn.disabled = false;
+        });
+
+        // --- Handle Predictive Typing (Markov + Gemma Boost) ---
         inputField.addEventListener('input', (e) => {
             const currentText = e.target.value;
-            const predictions = engine.getPredictions(currentText);
             
-            // Clear current chips
+            // Fetch predictions, passing in the Gemma context to boost relevant words
+            const predictions = engine.getPredictions(currentText, 5, gemmaContext);
+            
             predictionsContainer.innerHTML = '';
 
-            // Render new chips
             predictions.forEach(word => {
                 const chip = document.createElement('button');
                 chip.textContent = word;
-                chip.style.padding = "15px 30px";
-                chip.style.fontSize = "20px";
                 
-                // Clicking a chip appends the word
+                // Highlight the button in blue if Gemma recommended it
+                if (gemmaContext.includes(word)) {
+                    chip.classList.add('gemma-boosted');
+                }
+                
                 chip.onclick = () => {
-                    inputField.value += (currentText.endsWith(' ') ? '' : ' ') + word + ' ';
+                    const val = inputField.value;
+                    const needsSpace = val.length > 0 && !val.endsWith(' ');
+                    inputField.value += (needsSpace ? ' ' : '') + word + ' ';
                     inputField.focus();
-                    // Trigger input event to get next predictions automatically
                     inputField.dispatchEvent(new Event('input'));
                 };
                 predictionsContainer.appendChild(chip);
             });
         });
     </script>
+</body>
+</html>

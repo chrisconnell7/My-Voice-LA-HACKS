@@ -1,37 +1,32 @@
 export class NgramEngine {
-    constructor(dictionaryUrl = 'markov_dictionary.json') {
+    constructor(dictionaryUrl) {
         this.dictionaryUrl = dictionaryUrl;
         this.dictionary = {};
         this.isLoaded = false;
     }
 
-    /**
-     * Fetches and parses the JSON dictionary. 
-     * Call this once when the application initializes.
-     */
     async load() {
         try {
             const response = await fetch(this.dictionaryUrl);
             if (!response.ok) throw new Error("Network response was not ok");
             this.dictionary = await response.json();
             this.isLoaded = true;
-            console.log("Markov dictionary loaded successfully.");
+            console.log("Smart Markov dictionary loaded successfully.");
         } catch (error) {
             console.error("Failed to load markov_dictionary.json:", error);
         }
     }
 
-    /**
-     * Cleans the input text using the same logic as the Python parser.
-     */
     _cleanInput(text) {
         return text.toLowerCase().replace(/[^a-z0-9\s']/g, '').trim();
     }
 
     /**
-     * Takes the current text input and returns an array of up to 4 string predictions.
+     * @param {string} inputText - The user's current typed sentence.
+     * @param {number} numSuggestions - How many buttons to render (Default: 5).
+     * @param {Array<string>} gemmaContextWords - Keywords from Gemma to prioritize.
      */
-    getPredictions(inputText, numSuggestions = 4) {
+    getPredictions(inputText, numSuggestions = 5, gemmaContextWords = []) {
         if (!this.isLoaded) {
             console.warn("Engine not loaded yet.");
             return [];
@@ -41,19 +36,37 @@ export class NgramEngine {
         if (!cleanedText) return [];
 
         const tokens = cleanedText.split(/\s+/);
-        
-        // Assuming n_gram_size=2 from the Python script, we only care about the last word typed
-        const lastWord = tokens[tokens.length - 1];
+        let suggestions = [];
 
-        // O(1) Hash Map lookup
-        const suggestions = this.dictionary[lastWord];
-
-        if (suggestions && suggestions.length > 0) {
-            // Return top 4 suggestions
-            return suggestions.slice(0, numSuggestions);
+        // PATH A: Multi-Level Context Lookup
+        // 1. Try to get 2-word context first (highest accuracy)
+        if (tokens.length >= 2) {
+            const twoWordState = `${tokens[tokens.length - 2]} ${tokens[tokens.length - 1]}`;
+            suggestions = this.dictionary[twoWordState];
         }
 
-        // Return empty array if no predictions found in the model
+        // 2. Fallback to 1-word context if the 2-word combo isn't in the dataset 
+        //    OR if they have only typed one word so far.
+        if (!suggestions || suggestions.length === 0) {
+            const oneWordState = tokens[tokens.length - 1];
+            suggestions = this.dictionary[oneWordState] || [];
+        }
+
+        // PATH B: Google Gemma Context Boosting
+        if (suggestions.length > 0) {
+            const sortedSuggestions = suggestions.sort((a, b) => {
+                // If the word is in the Gemma list, give it a weight of 1, else 0
+                const aIsContext = gemmaContextWords.includes(a) ? 1 : 0;
+                const bIsContext = gemmaContextWords.includes(b) ? 1 : 0;
+                
+                // Sort descending (context words bubble up to the front of the array)
+                return bIsContext - aIsContext; 
+            });
+
+            // Return the top N words
+            return sortedSuggestions.slice(0, numSuggestions);
+        }
+
         return [];
     }
 }
