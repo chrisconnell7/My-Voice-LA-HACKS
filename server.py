@@ -73,26 +73,32 @@ def transcribe_audio():
 def analyze_notes():
     data = request.json
     doctor_notes = data.get('notes', '')
-    target_language = data.get('language', 'English') 
+    # This comes from window.currentLang.english (e.g., "Spanish" or "Chinese")
+    target_lang_name = data.get('language', 'English') 
 
     if not doctor_notes:
         return jsonify({"error": "No notes provided"}), 400
 
+    # We tell Gemma to act as a bridge between the Doctor and Patient
     prompt = f"""
-    You are an expert AI assistant helping a paralyzed hospital patient communicate. 
-    Read the following doctor's clinical notes and generate UI elements based ONLY on their specific diagnosis.
-
-    Doctor's Notes: "{doctor_notes}"
-
-    Generate two things:
-    1. "keywords": 10 single-word nouns and verbs. They MUST be related to the exact anatomy or symptoms mentioned in the notes.
-    2. "quickPhrases": 5 short, first-person sentences (3-5 words max). They MUST address specific symptoms of the condition. 
-       - BAD EXAMPLES (Too generic): "I am in pain", "Please help me", "I need a doctor".
-       - GOOD EXAMPLES (If notes mention stroke/heart): "My chest feels tight", "My arm is numb", "I feel dizzy", "My face feels weak".
-
-    CRITICAL INSTRUCTION: You must write the 'keywords' and 'quickPhrases' in {target_language}.
+    ROLE: Medical Communication Assistant.
+    TASK: Translate clinical notes and generate patient-centric communication chips.
     
-    Return ONLY a raw JSON object with keys 'keywords' and 'quickPhrases'. Do not include markdown blocks like ```json.
+    INPUT NOTES: "{doctor_notes}"
+    PATIENT LANGUAGE: {target_lang_name}
+
+    INSTRUCTIONS:
+    1. Read the input notes (which may be in English or another language).
+    2. Extract the core medical symptoms and needs.
+    3. Translate those findings into {target_lang_name}.
+    4. Generate 10 single-word nouns/verbs (keywords) in {target_lang_name}.
+    5. Generate 5 short first-person phrases in {target_lang_name} for the patient to use.
+
+    OUTPUT FORMAT: Return ONLY a raw JSON object.
+    {{
+      "keywords": [],
+      "quickPhrases": []
+    }}
     """
 
     try:
@@ -101,9 +107,7 @@ def analyze_notes():
             "prompt": prompt,
             "stream": False,
             "format": "json",
-            "options": {
-                "temperature": 0.2 
-            }
+            "options": { "temperature": 0.1 } # Low temp = higher translation accuracy
         })
         
         response_data = response.json()

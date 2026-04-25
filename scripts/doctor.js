@@ -134,7 +134,7 @@ window.analyzeWithGemma = async (contextText) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 notes: contextText,
-                language: targetLang // Send the language to Flask!
+                language: window.currentLang.english // Ensures Gemma knows the target
             })
         });
         
@@ -142,8 +142,9 @@ window.analyzeWithGemma = async (contextText) => {
         if (data.contextWords) window.gemmaContextWords = data.contextWords;
         
         if (data.quickPhrases) {
+            // These phrases will now be in the patient's language (Spanish/Chinese)
             fileExtractedPhrases = data.quickPhrases.map(text => ({ icon: '⚡', text }));
-            window.syncDoctorCategory();
+            window.syncDoctorCategory(); // Updates the UI Grid
         }
     } catch(e) {
         console.error("Gemma API failed. Is server.py running?", e);
