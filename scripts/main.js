@@ -37,6 +37,15 @@ window.getMessageContent = () => {
     return tempDiv.innerText;
 };
 
+window.getUIString = (englishKey) => {
+    // If no language is selected yet, default to English
+    const langCode = window.currentLang ? window.currentLang.code : 'en-US';
+    const dict = window.staticTranslations[langCode] || window.staticTranslations['en-US'];
+    
+    // Return the translation if it exists, otherwise return the original English key
+    return (dict && dict.ui && dict.ui[englishKey]) ? dict.ui[englishKey] : englishKey;
+};
+
 window.setMessageContent = (text) => {
     // Overwriting innerHTML ensures only ONE custom blue cursor exists
     messageText.innerHTML = text + '<span class="cursor"></span>';
@@ -76,9 +85,12 @@ window.backspace = () => {
 
 // ─── WORKER COMMUNICATION (The "Brain" Interface) ───
 ngramWorker.onmessage = (e) => {
-    if (e.data.status === 'ready') {
+    // ... inside worker message event
+    if (data.status === 'ready') {
         isEngineReady = true;
-        console.log("AI Thread: Ready");
+        if (aiPlaceholder) {
+            aiPlaceholder.textContent = window.getUIString('Start typing to see neural suggestions...');
+        }
     }
     if (e.data.status === 'results') {
         renderAIChips(e.data.predictions);
@@ -126,15 +138,30 @@ function renderAIChips(predictions) {
 }
 
 // ─── CATEGORY & SUGGESTION RENDERING ───
-window.renderCategories = () => {
-    const grid = document.getElementById('categoriesGrid');
+window.renderSuggestions = () => {
+    const grid = document.getElementById('suggestionsGrid');
     if (!grid) return;
-    grid.innerHTML = window.categoryMeta.map(m => `
-        <button class="category-btn ${m.key === window.currentCategory ? 'active' : ''}" 
-                onclick="window.selectCategory('${m.key}')">
-            <div class="category-icon">${m.icon}</div><div>${m.key}</div>
-        </button>
-    `).join('');
+    
+    // Safety check: ensure categoryData exists
+    if (!window.categoryData || !window.categoryData[window.currentCategory]) {
+        grid.innerHTML = '<div style="padding: 20px; color: #666;">No phrases found for this category.</div>';
+        return;
+    }
+
+    const phrases = window.categoryData[window.currentCategory];
+    
+    // Build the buttons using data-text to perfectly protect against apostrophes
+    grid.innerHTML = phrases.map(phrase => {
+        // Escape double quotes just in case, single quotes (apostrophes) are now 100% safe
+        const safeText = phrase.text.replace(/"/g, '&quot;');
+        
+        return `
+            <button class="suggestion-btn" data-text="${safeText}" onclick="window.addToMessage(this.dataset.text)">
+                <span class="suggestion-icon">${phrase.icon}</span>
+                <span>${phrase.text}</span>
+            </button>
+        `;
+    }).join('');
 };
 
 window.selectCategory = (key) => { 
@@ -311,13 +338,123 @@ window.applyLanguage = () => {
     document.getElementById('menuLangSub').textContent = window.currentLang.english;
     
     // 3. Update Keyboard if it's open
-    if (window.keyboardVisible) {
+    if (window.keyboardVisible && typeof window.buildKeyboard === 'function') {
         window.buildKeyboard();
     }
     
-    // 4. Update UI labels (if you have multi-lang strings)
-    // Optional: window.updateUILabels(); 
+    // Grab the dictionary for the selected language, or default to en-US
+    const dict = window.staticTranslations[window.currentLang.code] || window.staticTranslations['en-US'];
+    
+    // 4. Update Static UI Text
+    document.querySelectorAll('.ui-text').forEach(el => {
+        const englishKey = el.getAttribute('data-en');
+        if (dict && dict.ui && dict.ui[englishKey]) {
+            el.textContent = dict.ui[englishKey];
+        } else {
+            el.textContent = englishKey; // Fallback
+        }
+    });
 
-    window.closeLangModal();
-    window.toggleMenu(); // Close the menu too
+    // 5. Update Built-in Category Phrases
+    if (dict && dict.categories) {
+        window.categoryData['Medical'] = dict.categories.Medical || window.staticTranslations['en-US'].categories.Medical;
+        window.categoryData['Feelings'] = dict.categories.Feelings || window.staticTranslations['en-US'].categories.Feelings;
+        window.categoryData['Needs'] = dict.categories.Needs || window.staticTranslations['en-US'].categories.Needs;
+    }
+
+    // 6. INSTANTLY REFRESH BOTH GRIDS (This fixes your category delay!)
+    if (typeof window.renderCategories === 'function') {
+        window.renderCategories();
+    }
+    
+    if (window.currentCategory !== 'Doctor' && typeof window.renderSuggestions === 'function') {
+        window.renderSuggestions();
+    }
+    
+    // Close the modal after applying
+    if (typeof window.closeLangModal === 'function') {
+        window.closeLangModal();
+    }
 };
+// ─── CATEGORY & SUGGESTION LOGIC ────────────────────────────────────────
+
+// Default to 'Medical' if no category is selected yet
+window.currentCategory = window.currentCategory || 'Medical';
+
+window.renderCategories = () => {
+    const grid = document.getElementById('categoriesGrid');
+    if (!grid) return;
+    
+    // Safety check: Ensure categoryData exists
+    window.categoryData = window.categoryData || {};
+    
+    grid.innerHTML = window.categoryMeta.map(cat => {
+        // Add the active styling if it is the currently selected category
+        const isActive = (window.currentCategory === cat.key) ? ' active' : '';
+        
+        // Use a smart onclick that works whether setCategory is global or local
+        return `
+            <button class="category-btn${isActive}" 
+                    onclick="typeof window.setCategory === 'function' ? window.setCategory('${cat.key}') : setCategory('${cat.key}')">
+                <span>${window.getUIString(cat.key)}</span>
+                <span style="font-size:24px">${cat.icon}</span>
+            </button>
+        `;
+    }).join('');
+};
+
+window.setCategory = (categoryName) => {
+    // 1. Update the active category state
+    window.currentCategory = categoryName;
+    
+    // 2. Re-render the category buttons to update the blue "active" highlighting
+    if (typeof window.renderCategories === 'function') {
+        window.renderCategories();
+    }
+    
+    // 3. Render the specific phrases for this category
+    if (categoryName === 'Doctor' && typeof window.openDoctorModal === 'function') {
+        window.openDoctorModal();
+    } else {
+        window.renderSuggestions();
+    }
+};
+
+window.renderSuggestions = () => {
+    const grid = document.getElementById('suggestionsGrid');
+    if (!grid) return;
+    
+    // Safety check: ensure categoryData exists
+    if (!window.categoryData || !window.categoryData[window.currentCategory]) {
+        grid.innerHTML = '<div style="padding: 20px; color: #666;">No phrases found for this category.</div>';
+        return;
+    }
+
+    const phrases = window.categoryData[window.currentCategory];
+    
+    // Build the buttons using data-text to perfectly protect against apostrophes
+    grid.innerHTML = phrases.map(phrase => {
+        // Escape double quotes just in case, single quotes (apostrophes) are now 100% safe
+        const safeText = phrase.text.replace(/"/g, '&quot;');
+        
+        return `
+            <button class="suggestion-btn" data-text="${safeText}" onclick="window.addToMessage(this.dataset.text)">
+                <span class="suggestion-icon">${phrase.icon}</span>
+                <span>${phrase.text}</span>
+            </button>
+        `;
+    }).join('');
+};
+
+// ─── INITIALIZATION (Put this at the very bottom of main.js) ───
+window.addEventListener('DOMContentLoaded', () => {
+    // 1. Load the category buttons
+    if (typeof window.renderCategories === 'function') {
+        window.renderCategories();
+    }
+    
+    // 2. Load the phrases for the default category (Medical)
+    if (typeof window.renderSuggestions === 'function') {
+        window.renderSuggestions();
+    }
+});

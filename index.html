@@ -13,16 +13,16 @@
     <div class="header">
         <div class="header-left">
             <div class="hamburger" onclick="toggleMenu()">☰</div>
-            <div class="title">My Voice</div>
+            <div class="title ui-text" data-en = "My Voice">My Voice</div>
         </div>
         <div class="status-badge">
             <div class="status-dot"></div>
-            <span>Eye Tracking Active</span>
+            <span class="ui-text" data-en="Eye Tracking Active">Eye Tracking Active</span>
         </div>
         <div class="header-right">
             <button class="icon-btn keyboard-toggle-btn" id="keyboardToggleBtn" onclick="toggleKeyboard()">
                 <span>⌨️</span>
-                <span>Keyboard</span>
+                <span class="ui-text" data-en="Keyboard">Keyboard</span>
             </button>
         </div>
     </div>
@@ -36,7 +36,7 @@
             </div>
             <button class="speak-btn" onclick="speakMessage()">
                 <span>🔊</span>
-                <span>Speak</span>
+                <span class="ui-text" data-en="Speak">Speak</span>
             </button>
         </div>
     </div>
@@ -86,7 +86,9 @@
     <!-- Footer -->
     <div class="footer">
         <span>ℹ️</span>
-        <span> Look at a button for a moment to select it</span>
+        <div class="ui-text" data-en="Look at button at the bottom to select it">
+    Look at button at the bottom to select it
+        </div>
     </div>
     <button id="listenBtn" class="action-btn" onclick="window.toggleListening()">
         <div id="listenIcon" class="icon">🎙️</div>
@@ -98,15 +100,15 @@
 <div class="action-sidebar">
     <button class="action-btn clear" onclick="clearMessage()">
         <div class="action-icon">✕</div>
-        <div>Clear</div>
+        <span class="ui-text" data-en="Clear">Clear</span>
     </button>
     <button class="action-btn backspace" onclick="backspace()">
         <div class="action-icon">←</div>
-        <div>Back</div>
+        <span class="ui-text" data-en="Back">Back</span>
     </button>
     <button class="action-btn speak-message" onclick="speakMessage()">
         <div class="action-icon">💬</div>
-        <div>Speak</div>
+        <span class="ui-text" data-en="Speak">Speak</span>
     </button>
 </div>
 
@@ -199,7 +201,7 @@
                 <span class="menu-lang-change">Change →</span>
             </div>
 
-            <div class="menu-section-title">Navigation</div>
+            <div class="menu-section-title ui-text" data-en = "Navigation">Navigation</div>
             <button class="menu-item" onclick="toggleMenu(); toggleKeyboard();">
                 <span class="menu-item-icon">⌨️</span> Keyboard
             </button>
