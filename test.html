@@ -1,0 +1,39 @@
+<script type="module">
+        // 1. Updated path to point to the scripts folder
+        import { NgramEngine } from './scripts/ngram-engine.js';
+
+        // 2. Updated path to point to the data folder
+        const engine = new NgramEngine('./data/markov_dictionary.json');
+        
+        const inputField = document.getElementById('patient-input');
+        const predictionsContainer = document.getElementById('predictions-container');
+
+        // Initialize engine
+        await engine.load();
+
+        // Listen for typing events
+        inputField.addEventListener('input', (e) => {
+            const currentText = e.target.value;
+            const predictions = engine.getPredictions(currentText);
+            
+            // Clear current chips
+            predictionsContainer.innerHTML = '';
+
+            // Render new chips
+            predictions.forEach(word => {
+                const chip = document.createElement('button');
+                chip.textContent = word;
+                chip.style.padding = "15px 30px";
+                chip.style.fontSize = "20px";
+                
+                // Clicking a chip appends the word
+                chip.onclick = () => {
+                    inputField.value += (currentText.endsWith(' ') ? '' : ' ') + word + ' ';
+                    inputField.focus();
+                    // Trigger input event to get next predictions automatically
+                    inputField.dispatchEvent(new Event('input'));
+                };
+                predictionsContainer.appendChild(chip);
+            });
+        });
+    </script>
