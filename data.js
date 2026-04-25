@@ -72,49 +72,18 @@ const keyboardLayouts = {
         ['Z','X','C','V','B','N','M','⌫'],
         ['Á','É','Í','Ó','Ú','Ü',' ','✓']
     ],
-    french: [
-        ['A','Z','E','R','T','Y','U','I','O','P'],
-        ['Q','S','D','F','G','H','J','K','L','M'],
-        ['W','X','C','V','B','N','É','È','⌫'],
-        ['À','Â','Ê','Î','Ô','Û','Ç',' ','✓']
-    ],
     pinyin: [
         ['b','p','m','f','d','t','n','l','g','k'],
         ['h','j','q','x','zh','ch','sh','r','z','c'],
         ['s','y','w','a','o','e','i','u','ü','⌫'],
         ['ā','á','ǎ','à','ē','é','ě','è','ī','í','ǐ','ì',' ','✓']
-    ],
-    arabic: [
-        ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح'],
-        ['ش','س','ي','ب','ل','ا','ت','ن','م','ك'],
-        ['ظ','ط','ذ','د','ز','ر','و','ة','⌫'],
-        [' ','✓']
-    ],
-    korean: [
-        ['ㅂ','ㅈ','ㄷ','ㄱ','ㅅ','ㅛ','ㅕ','ㅑ','ㅐ','ㅔ'],
-        ['ㅁ','ㄴ','ㅇ','ㄹ','ㅎ','ㅗ','ㅓ','ㅏ','ㅣ'],
-        ['ㅋ','ㅌ','ㅊ','ㅍ','ㅠ','ㅜ','ㅡ','⌫'],
-        [' ','✓']
-    ],
-    cyrillic: [
-        ['Й','Ц','У','К','Е','Н','Г','Ш','Щ','З'],
-        ['Ф','Ы','В','А','П','Р','О','Л','Д','Ж'],
-        ['Я','Ч','С','М','И','Т','Ь','Б','Ю','⌫'],
-        [' ','✓']
-    ],
+    ]
 };
 
 const languages = [
     { code:'en-US', flag:'🇺🇸', native:'English',        english:'English',            tts:'en-US',  keyboard:'latin'   },
     { code:'es-US', flag:'🇲🇽', native:'Español',        english:'Spanish',            tts:'es-US',  keyboard:'spanish' },
     { code:'zh-CN', flag:'🇨🇳', native:'中文 (拼音)',     english:'Chinese (Pinyin)',    tts:'zh-CN',  keyboard:'pinyin'  },
-    { code:'tl-PH', flag:'🇵🇭', native:'Filipino',       english:'Filipino/Tagalog',   tts:'fil-PH', keyboard:'latin'   },
-    { code:'vi-VN', flag:'🇻🇳', native:'Tiếng Việt',     english:'Vietnamese',         tts:'vi-VN',  keyboard:'latin'   },
-    { code:'ar-SA', flag:'🇸🇦', native:'العربية',        english:'Arabic',             tts:'ar-SA',  keyboard:'arabic'  },
-    { code:'fr-FR', flag:'🇫🇷', native:'Français',       english:'French',             tts:'fr-FR',  keyboard:'french'  },
-    { code:'ko-KR', flag:'🇰🇷', native:'한국어',          english:'Korean',             tts:'ko-KR',  keyboard:'korean'  },
-    { code:'ru-RU', flag:'🇷🇺', native:'Русский',        english:'Russian',            tts:'ru-RU',  keyboard:'cyrillic'},
-    { code:'hi-IN', flag:'🇮🇳', native:'हिन्दी',          english:'Hindi',              tts:'hi-IN',  keyboard:'hindi'   },
 ];
 
 // Global State

@@ -205,25 +205,21 @@ function saveAllGenerated() {
  *
  * Always stores English as the source; translation is layered on top.
  */
+/**
+ * Rebuild categoryData['Doctor'] from the current doctorPrompts +
+ * fileExtractedPhrases. No translation applied in static mode.
+ */
 function syncDoctorCategoryFull() {
-    // Build the English version
+    // Build the combined list of custom prompts + extracted files
     const combined = doctorPrompts.map(p => ({ icon: p.icon, text: p.text }));
+    
     (fileExtractedPhrases || []).forEach(p => {
         if (!combined.find(c => c.text === p.text)) combined.push(p);
     });
 
-    if (typeof currentLang !== 'undefined' && currentLang.code !== 'en-US') {
-        // Trigger an async translation update; show English in the meantime
-        categoryData['Doctor'] = combined;
-        if (currentCategory === 'Doctor') renderSuggestions();
-        // Invalidate the doctor portion of the cache and re-translate
-        if (typeof translateDoctorPromptsIfNeeded === 'function') {
-            translateDoctorPromptsIfNeeded();
-        }
-    } else {
-        categoryData['Doctor'] = combined;
-        if (currentCategory === 'Doctor') renderSuggestions();
-    }
+    // Assign it to the grid and render
+    categoryData['Doctor'] = combined;
+    if (currentCategory === 'Doctor') renderSuggestions();
 }
 
 function openDoctorModal() {
