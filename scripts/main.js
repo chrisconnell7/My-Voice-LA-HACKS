@@ -465,6 +465,48 @@ window.renderSuggestions = () => {
     }).join('');
 };
 
+window.selectedVoiceId = localStorage.getItem('userVoiceId') || "pNInz6obpgDQGcFmaJgB";
+
+window.selectVoice = (id) => {
+    window.selectedVoiceId = id;
+    localStorage.setItem('userVoiceId', id);
+    
+    // Visually update the cards (add 'active' class)
+    document.querySelectorAll('.voice-card').forEach(card => {
+        card.classList.remove('active');
+        if (card.getAttribute('onclick').includes(id)) {
+            card.classList.add('active');
+        }
+    });
+    console.log("Voice updated to:", id);
+};
+
+// --- SETTINGS MODAL LOGIC ---
+window.openSettings = () => {
+    document.getElementById('settingsModal').classList.add('open');
+    // Highlight the currently saved voice
+    window.updateVoiceUI();
+};
+
+window.closeSettings = () => {
+    document.getElementById('settingsModal').classList.remove('open');
+};
+
+window.updateVoiceUI = () => {
+    const currentId = window.selectedVoiceId;
+    document.querySelectorAll('.voice-card').forEach(card => {
+        card.classList.toggle('active', card.dataset.id === currentId);
+    });
+};
+
+// Overwrite the existing window.selectVoice to include UI updates
+window.selectVoice = (id) => {
+    window.selectedVoiceId = id;
+    localStorage.setItem('userVoiceId', id);
+    window.updateVoiceUI();
+    console.log("Voice changed to:", id);
+};
+
 // ─── INITIALIZATION (Put this at the very bottom of main.js) ───
 // ─── STARTUP INIT ───
 document.addEventListener('DOMContentLoaded', () => {

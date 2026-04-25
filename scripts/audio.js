@@ -85,3 +85,45 @@ window.processBackgroundChunk = async (blob) => {
         console.error("Background processing error:", e);
     }
 };
+
+// Add to the bottom of audio.js
+window.handleVoiceClone = async () => {
+    const fileInput = document.getElementById('voiceUpload');
+    const status = document.getElementById('cloneStatus');
+    
+    if (!fileInput.files[0]) return;
+
+    status.textContent = "🧬 Cloning your voice... please wait.";
+    status.style.color = "#4a90e2";
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('name', 'Personalized Patient Voice');
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/clone-voice', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+        
+        if (data.voice_id) {
+            // Success! Set the new voice as active
+            window.selectVoice(data.voice_id);
+            status.textContent = "✅ Voice Cloned Successfully!";
+            status.style.color = "#28a745";
+            
+            // Add a permanent button for the custom voice
+            document.getElementById('customVoicePlaceholder').innerHTML = `
+                <button class="voice-card action-btn active" data-id="${data.voice_id}" onclick="window.selectVoice('${data.voice_id}')">
+                    <span class="voice-icon">🌟</span> Personal
+                </button>
+            `;
+        } else {
+            throw new Error(data.error || "Unknown Error");
+        }
+    } catch (e) {
+        status.textContent = "❌ Error: " + e.message;
+        status.style.color = "#dc3545";
+    }
+};

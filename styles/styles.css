@@ -875,3 +875,63 @@ body {
     padding: 10px 15px; /* Tighten padding so more keyboard is visible */
     min-height: 50px;
 }
+
+.voice-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.voice-card {
+    background: #f8f9fa;
+    border: 2px solid #eef0f2;
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 600;
+}
+
+.voice-card.active {
+    border-color: #4a90e2;
+    background: #ebf3ff;
+    color: #4a90e2;
+}
+
+.voice-icon {
+    display: block;
+    font-size: 24px;
+    margin-bottom: 5px;
+}
+
+.voice-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.voice-card {
+    background: #f8f9fa;
+    border: 2px solid #eef0f2;
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 600;
+}
+
+.voice-card.active {
+    border-color: #4a90e2;
+    background: #ebf3ff;
+    color: #4a90e2;
+}
+
+.voice-icon {
+    display: block;
+    font-size: 24px;
+    margin-bottom: 5px;
+}
