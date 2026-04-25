@@ -92,10 +92,14 @@
     Look at button at the bottom to select it
         </div>
     </div>
-    <button id="listenBtn" class="action-btn" onclick="window.toggleListening()">
+    <div id="listenBtn" 
+        class="action-btn" 
+        type="button" 
+        onclick="window.toggleListening(event)" 
+        style="cursor: pointer;">
         <div id="listenIcon" class="icon">🎙️</div>
         <div id="listenStatus" class="text">Listen to Doctor</div>
-    </button>
+    </div>
 </div>
 
 <!-- Action Sidebar -->

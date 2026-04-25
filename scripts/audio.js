@@ -1,51 +1,76 @@
 // scripts/audio.js
-let recognition;
+let mediaRecorder;
+let audioChunks = [];
 let isListening = false;
 
-if ('webkitSpeechRecognition' in window) {
-    recognition = new webkitSpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-
-    recognition.onresult = (event) => {
-        let finalTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-                finalTranscript += event.results[i][0].transcript + ' ';
-            }
-        }
-        
-        if (finalTranscript) {
-            console.log("Doctor said:", finalTranscript);
-            // Instantly send the transcribed text to your Gemma backend!
-            window.analyzeWithGemma(finalTranscript);
-        }
-    };
-
-    recognition.onerror = (event) => {
-        console.error("Speech recognition error", event.error);
-    };
-} else {
-    console.warn("Speech Recognition API not supported in this browser.");
-}
-
-window.toggleListening = () => {
-    const btn = document.getElementById('listenBtn');
+window.toggleListening = async (e) => {
+    // 1. COMPLETELY BLOCK THE REFRESH
+    if (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    }
     
+    const btn = document.getElementById('listenBtn');
+
     if (!isListening) {
-        // Set the microphone language dynamically based on your app's state
-        // If no language is selected yet, default to English (US)
-        const langCode = window.currentLang ? window.currentLang.code : 'en-US';
-        recognition.lang = langCode;
-        
-        recognition.start();
-        isListening = true;
-        if(btn) btn.classList.add('recording');
-        console.log(`🎙️ Listening in ${langCode}...`);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                audioChunks = []; // Reset
+                
+                if (btn) btn.classList.remove('recording');
+                console.log("🛑 Recording stopped. Sending to local Whisper...");
+                
+                await window.sendAudioToBackend(audioBlob);
+            };
+
+            mediaRecorder.start();
+            isListening = true;
+            if (btn) btn.classList.add('recording');
+            console.log("🎙️ Listening...");
+
+        } catch (error) {
+            console.error("Microphone access denied:", error);
+        }
     } else {
-        recognition.stop();
+        if (mediaRecorder && mediaRecorder.state !== "inactive") {
+            mediaRecorder.stop();
+        }
         isListening = false;
-        if(btn) btn.classList.remove('recording');
-        console.log("🛑 Stopped.");
+        return false;
+    }
+};
+
+window.sendAudioToBackend = async (audioBlob) => {
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "doctor_speech.webm");
+
+    // Pass the language so Whisper knows what to translate/transcribe
+    const langCode = window.currentLang ? window.currentLang.code.split('-')[0] : 'en';
+    formData.append("language", langCode);
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/transcribe', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.transcription) {
+            console.log("🎯 Whisper Transcribed:", data.transcription);
+            // Send the transcribed text straight into your local Gemma model!
+            window.analyzeWithGemma(data.transcription);
+        }
+        
+    } catch (error) {
+        console.error("Failed to process audio locally:", error);
     }
 };

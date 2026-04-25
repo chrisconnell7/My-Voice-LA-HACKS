@@ -4,14 +4,11 @@ flask-cors
 # google-cloud-aiplatform
 python-dotenv
 
-### For AI Studio and Gemini API
-torch
-torchvision
-torchaudio
+### For AI Functionality
 google-genai
+faster-whisper
+werkzeug
 
-### To load smaller model
-bitsandbytes
 
 ### Specifically for audio processing
 transformers
