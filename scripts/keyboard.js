@@ -76,10 +76,40 @@ window.toggleKeyboard = () => {
 };
 
 // ─── TEXT TO SPEECH ───
-window.speakMessage = () => {
+
+window.speakMessage = async () => {
     const text = window.getMessageContent();
     if (!text) return;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = window.currentLang.tts;
-    window.speechSynthesis.speak(utterance);
+
+    console.log("🔊 Generating ElevenLabs Voice...");
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                text: text,
+                // NEW: Pass the selected voice ID to the backend
+                voice_id: window.selectedVoiceId 
+            })
+        });
+
+        if (!response.ok) throw new Error("TTS Request Failed");
+
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        
+        audio.play();
+        
+        // Clean up the URL after playing
+        audio.onended = () => URL.revokeObjectURL(audioUrl);
+
+    } catch (error) {
+        console.error("ElevenLabs Error, falling back to browser TTS:", error);
+        // Fallback to native TTS if API fails or quota is hit
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = window.currentLang.tts;
+        window.speechSynthesis.speak(utterance);
+    }
 };
