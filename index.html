@@ -83,26 +83,23 @@
 
     <!-- Footer -->
     <div class="footer">
-    <div class="footer-controls">
-        <button class="icon-btn footer-btn" id="autoListenBtn" onclick="window.toggleAutoListen()">
-            <span class="icon">👂</span>
-            <span class="ui-text" data-en="Auto Listen">Auto Listen</span>
-        </button>
-        
-        <button class="icon-btn footer-btn" onclick="window.clearHistory()">
-            <span class="icon">🧹</span>
-            <span class="ui-text" data-en="Clear History">Clear History</span>
-        </button>
-    </div>
-</div>
+        <div class="footer-controls">
+            <button class="icon-btn footer-btn" id="autoListenBtn" onclick="window.toggleAutoListen()">
+                <span class="icon">👂</span>
+                <span class="ui-text" data-en="Auto Listen">Auto Listen</span>
+            </button>
+            
+            <button class="icon-btn footer-btn" onclick="window.clearHistory()">
+                <span class="icon">🧹</span>
+                <span class="ui-text" data-en="Clear History">Clear History</span>
+            </button>
+        </div>
 
-    <button class="doc-tab" id="tab-history" onclick="window.switchDocTab('history')">
-        <span class="ui-text" data-en="History">History</span>
-    </button>
-
-    <div id="panel-history" class="doc-panel">
-        <div id="historyContainer" class="history-log">
-            <p style="color:#888; text-align:center;">History will appear here...</p>
+        <div class="history-box-container">
+            <div class="section-label ui-text" data-en="History">History</div>
+            <div id="historyContainer" class="history-log">
+                <p id="historyPlaceholder" style="color:#888; text-align:center; font-size: 13px; margin: auto;">History will appear here...</p>
+            </div>
         </div>
     </div>
     

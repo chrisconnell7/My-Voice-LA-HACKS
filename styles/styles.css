@@ -22,10 +22,10 @@ body {
     background: #f8faff;
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0, 60, 180, 0.12);
-    padding: 20px 24px;
+    padding: 15px 24px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
 }
 
 /* Header */
@@ -106,7 +106,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    margin-bottom: 0px;
+    margin-bottom: -4px;
     position: relative;
 }
 .section-label {
@@ -185,21 +185,21 @@ body {
 .speak-btn:hover { background: #f0f7ff; border-color: #0066cc; color: #0066cc; }
 
 /* ── AI AUTOFILL ── */
-.ai-section { margin-bottom: 0; }
+.ai-section { margin-bottom: 4px; }
 
 .ai-box {
     background: linear-gradient(135deg, #f5f0ff 0%, #ebe4fd 100%);
     border: 2px solid #c4b5fd;
     border-radius: 16px;
-    padding: 10px 16px;
-    min-height: 44px;
+    padding: 6px 16px;
+    min-height: 36px;
     box-shadow: 0 4px 16px rgba(124, 58, 237, 0.08);
 }
 
 .ai-label {
     display: flex; align-items: center; gap: 8px;
     color: #7c3aed; font-weight: 600; font-size: 14px;
-    margin-bottom: 6px;
+    margin-bottom: 2px;
 }
 
 .ai-spinner {
@@ -240,30 +240,33 @@ body {
 .suggestions-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 10px;
+    gap: 12px;
+    flex-grow: 1;
 }
 
 .suggestion-btn {
     background: white;
     border: 2px solid #dce8ff;
     border-radius: 14px;
-    padding: 8px 14px;
+    padding: 12px 14px;
     text-align: center;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 0;
     font-weight: 600;
     color: #1a2a4a;
     box-shadow: 0 2px 8px rgba(0, 60, 180, 0.06);
+    min-height: 80px;
 }
 .suggestion-btn:hover { border-color: #3b6fd4; background: #f0f6ff; transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,60,180,0.12); }
 .suggestion-btn.active { border-color: #0066cc; background: #e3f2ff; border-width: 3px; }
 
 .suggestion-icon { display: none; }
-.suggestion-text { font-size: 20px; line-height: 1.3; font-weight: 700; }
+.suggestion-text { font-size: 28px; line-height: 1.3; font-weight: 700; }
 
 /* ── KEYBOARD ── */
 .keyboard-section {
@@ -591,7 +594,7 @@ body {
 /* Action Sidebar */
 .action-sidebar {
     position: fixed;
-    top: 128px;        /* below header (~60px) + section label (~28px) + gap (~30px) */
+    top: 118px;        /* below header (~60px) + section label (~28px) + gap (~30px) */
     right: 36px;
     display: flex;
     flex-direction: row;
@@ -789,12 +792,12 @@ body {
 /* Footer */
 /* --- FOOTER REDESIGN --- */
 .footer {
-    margin-top: auto; /* Pushes footer to the very bottom of the container */
-    padding-top: 15px;
+    margin-top: 4px; /* Reduced from auto/15px to pull it up */
+    padding-top: 8px; /* Tighter padding */
     border-top: 2px solid #e0e8f8;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 6px; /* Tighter gap between buttons and box */
     flex-shrink: 0;
 }
 
@@ -975,4 +978,46 @@ body {
     display: block;
     font-size: 24px;
     margin-bottom: 5px;
+}
+
+/* ── FOOTER & HISTORY LOG ── */
+.history-box-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+}
+
+.history-log {
+    background: white;
+    border: 2px solid #e0e7ff;
+    border-radius: 12px;
+    padding: 8px 12px;
+    height: 100px; /* Reduced from 120px to fit better on screen */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column; 
+    gap: 6px;
+}
+
+/* Ensure the section label is compact */
+.history-box-container .section-label {
+    margin-bottom: 2px;
+}
+
+/* Hide history log when keyboard is open to maintain the one-screen rule */
+.keyboard-section.open ~ .footer .history-box-container {
+    display: none;
+}
+
+/* Styling for individual history messages */
+.history-item {
+    background: #f8f9fb;
+    border: 1px solid #e0e8f8;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    color: #333;
+    line-height: 1.4;
+    word-break: break-word;
 }

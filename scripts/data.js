@@ -81,12 +81,12 @@ window.staticTranslations = {
             Medical: [
                 { icon: '😣', text: "Pain" }, { icon: '😮‍💨', text: "Breathe" }, { icon: '🤢', text: "Nausea" },
                 { icon: '🤧', text: "Dizzy" }, { icon: '🫀', text: "Chest" }, { icon: '🤕', text: "Head" },
-                { icon: '💊', text: "Medicine" }, { icon: '🩻', text: "Scan" }
+                { icon: '💊', text: "Medicine" },
             ],
             Needs: [
                 { icon: '🚽', text: "Bathroom" }, { icon: '💧', text: "Water" }, { icon: '🛏️', text: "Bed" },
                 { icon: '🥶', text: "Cold" }, { icon: '🥵', text: "Hot" }, { icon: '痒', text: "Itch" },
-                { icon: '👓', text: "Glasses" }, { icon: '📱', text: "Phone" }
+                { icon: '👓', text: "Glasses" }, 
             ],
             Feelings: [
                 { icon: '😟', text: "Anxious" }, { icon: '😨', text: "Scared" }, { icon: '😠', text: "Frustrated" },
@@ -137,12 +137,12 @@ window.staticTranslations = {
             Medical: [
                 { icon: '😣', text: "Dolor" }, { icon: '😮‍💨', text: "Respirar" }, { icon: '🤢', text: "Náuseas" },
                 { icon: '🤧', text: "Mareo" }, { icon: '🫀', text: "Pecho" }, { icon: '🤕', text: "Cabeza" },
-                { icon: '💊', text: "Medicina" }, { icon: '🩻', text: "Examen" }
+                { icon: '💊', text: "Medicina" }, 
             ],
             Needs: [
                 { icon: '🚽', text: "Baño" }, { icon: '💧', text: "Agua" }, { icon: '🛏️', text: "Cama" },
                 { icon: '🥶', text: "Frío" }, { icon: '🥵', text: "Calor" }, { icon: '痒', text: "Picazón" },
-                { icon: '👓', text: "Gafas" }, { icon: '📱', text: "Teléfono" }
+                { icon: '👓', text: "Gafas" },
             ],
             Feelings: [
                 { icon: '😟', text: "Ansiedad" }, { icon: '😨', text: "Miedo" }, { icon: '😠', text: "Frustrado" },
@@ -193,12 +193,12 @@ window.staticTranslations = {
             Medical: [
                 { icon: '😣', text: "痛" }, { icon: '😮‍💨', text: "呼吸" }, { icon: '🤢', text: "恶心" },
                 { icon: '🤧', text: "头晕" }, { icon: '🫀', text: "胸" }, { icon: '🤕', text: "头" },
-                { icon: '💊', text: "药" }, { icon: '🩻', text: "检查" }
+                { icon: '💊', text: "药" }, 
             ],
             Needs: [
                 { icon: '🚽', text: "洗手间" }, { icon: '💧', text: "水" }, { icon: '🛏️', text: "床" },
                 { icon: '🥶', text: "冷" }, { icon: '🥵', text: "热" }, { icon: '痒', text: "痒" },
-                { icon: '👓', text: "眼镜" }, { icon: '📱', text: "手机" }
+                { icon: '👓', text: "眼镜" },
             ],
             Feelings: [
                 { icon: '😟', text: "焦虑" }, { icon: '😨', text: "害怕" }, { icon: '😠', text: "沮丧" },
