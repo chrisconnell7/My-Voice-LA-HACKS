@@ -1,2 +1,3 @@
 data/medical_qa.csv
 .env
+markov_dictionary.json

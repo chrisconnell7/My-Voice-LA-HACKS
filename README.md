@@ -111,6 +111,12 @@ Copy this key into your GOOGLE_API_KEY field in the .env file.
 
 🖥️ Running the Application
 
+0. Create the markov_dictionary.json
+
+Download this dataset: https://www.kaggle.com/datasets/yousefsaeedian/ai-medical-chatbot
+Rename it to medical_qa.csv and put it in the data folder
+Run build_dictionary.py and move the json file to the data folder
+
 1. Start the AI Backend
 
 The Python server handles the clinical text analysis and AI phrase generation.
@@ -154,4 +160,4 @@ doctor.js: AI phrase generation and modal logic.
 
 📄 License
 
-This project was developed for LA Hacks 2024.
+This project was developed for LA Hacks 2026.
