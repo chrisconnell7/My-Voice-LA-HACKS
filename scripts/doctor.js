@@ -125,11 +125,17 @@ window.generateFromContext = async () => {
 };
 
 window.analyzeWithGemma = async (contextText) => {
+    // Grab the target language from your UI state
+    const targetLang = window.currentLang ? window.currentLang.english : 'English';
+
     try {
         const response = await fetch('http://127.0.0.1:5000/analyze-notes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ notes: contextText })
+            body: JSON.stringify({ 
+                notes: contextText,
+                language: targetLang // Send the language to Flask!
+            })
         });
         
         const data = await response.json();

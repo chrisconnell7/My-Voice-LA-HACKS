@@ -85,9 +85,12 @@ window.backspace = () => {
 
 // ─── WORKER COMMUNICATION (The "Brain" Interface) ───
 ngramWorker.onmessage = (e) => {
-    // ... inside worker message event
-    if (data.status === 'ready') {
+    if (e.data.status === 'ready') {
         isEngineReady = true;
+        
+        // FIX: Safely find the placeholder element in the DOM first
+        const aiPlaceholder = document.querySelector('.ai-placeholder');
+        
         if (aiPlaceholder) {
             aiPlaceholder.textContent = window.getUIString('Start typing to see neural suggestions...');
         }
@@ -265,6 +268,13 @@ document.addEventListener('mousemove', (e) => {
 window.toggleMenu = () => {
     window.menuOpen = !window.menuOpen;
     document.getElementById('menuOverlay')?.classList.toggle('open', window.menuOpen);
+};
+
+// FIX: Define the missing function triggered by index.html
+window.handleMenuOverlayClick = () => {
+    if (window.menuOpen) {
+        window.toggleMenu();
+    }
 };
 
 // ─── STARTUP INIT ───

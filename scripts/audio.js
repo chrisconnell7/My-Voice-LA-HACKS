@@ -31,11 +31,17 @@ if ('webkitSpeechRecognition' in window) {
 
 window.toggleListening = () => {
     const btn = document.getElementById('listenBtn');
+    
     if (!isListening) {
+        // Set the microphone language dynamically based on your app's state
+        // If no language is selected yet, default to English (US)
+        const langCode = window.currentLang ? window.currentLang.code : 'en-US';
+        recognition.lang = langCode;
+        
         recognition.start();
         isListening = true;
         if(btn) btn.classList.add('recording');
-        console.log("🎙️ Listening...");
+        console.log(`🎙️ Listening in ${langCode}...`);
     } else {
         recognition.stop();
         isListening = false;
