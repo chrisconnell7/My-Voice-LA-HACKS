@@ -216,3 +216,29 @@ document.addEventListener('click', (e) => {
     const modal = document.getElementById('doctorModal');
     if (modal && e.target === modal) window.closeDoctorModal();
 });
+
+// scripts/doctor.js
+window.renderHistory = () => {
+    const container = document.getElementById('historyContainer');
+    if (!container) return;
+
+    if (window.fullTranscriptHistory.length === 0) {
+        container.innerHTML = '<p style="color:#888; text-align:center;">No history yet.</p>';
+        return;
+    }
+
+    container.innerHTML = window.fullTranscriptHistory.map(h => `
+        <div class="history-item">
+            <small>${h.time}</small>
+            <p>${h.text}</p>
+        </div>
+    `).join('');
+    
+    // Auto-scroll to the latest entry
+    container.scrollTop = container.scrollHeight;
+};
+
+window.clearHistory = () => {
+    window.fullTranscriptHistory = [];
+    window.renderHistory();
+};

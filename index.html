@@ -92,14 +92,23 @@
     Look at button at the bottom to select it
         </div>
     </div>
-    <div id="listenBtn" 
-        class="action-btn" 
-        type="button" 
-        onclick="window.toggleListening(event)" 
-        style="cursor: pointer;">
-        <div id="listenIcon" class="icon">🎙️</div>
-        <div id="listenStatus" class="text">Listen to Doctor</div>
+    <div class="auto-listen-wrap">
+        <span>Auto-Listen</span>
+        <label class="switch">
+            <input type="checkbox" id="autoListenToggle" onclick="window.toggleAutoListen()">
+            <span class="slider round"></span>
+        </label>
     </div>
+
+    <button class="doc-tab" id="tab-history" onclick="window.switchDocTab('history')">History</button>
+
+    <div id="panel-history" class="doc-panel">
+        <div id="historyContainer" class="history-log">
+            <p style="color:#888; text-align:center;">History will appear here...</p>
+        </div>
+        <button class="clear-btn" onclick="window.clearHistory()">Clear History</button>
+    </div>
+    
 </div>
 
 <!-- Action Sidebar -->

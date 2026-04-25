@@ -11,6 +11,7 @@ window.categoryMeta = [
     { key: 'Needs',     icon: '👨‍👩‍👧' },
     { key: 'People',    icon: '👥' }, 
     { key: 'Questions', icon: '💬' },
+    { key: 'Transcription', icon: '📡' },
 ];
 
 window.emojiOptions = ['🩺','💊','🩹','🧬','🔬','💉','🏥','❤️','🧠','🦷','👁️','👂'];
@@ -34,6 +35,11 @@ window.doctorPrompts = [
     { icon: '🩺', text: 'Do you have chest pain?' },
     { icon: '💊', text: 'Are you taking your medication?' },
 ];
+
+// Global Transcription State
+window.fullTranscriptHistory = [];
+window.maxTranscriptionPhrases = 10; // Keep only latest 10 phrases
+// window.autoListenInterval = 10000;   // 10 seconds default
 
 
 // Gemma Context (Used by Markov Engine)
