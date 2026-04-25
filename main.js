@@ -23,14 +23,20 @@ aiWorker.addEventListener('message', (event) => {
     else if (data.status === 'ready') {
         // The model is fully loaded and cached
         isAiReady = true;
-        if (aiPlaceholder) aiPlaceholder.textContent = "Start typing to see neural suggestions...";
+        const readyText = (typeof getUIString === 'function')
+            ? getUIString(window.UI_IDX?.AI_READY ?? 37)
+            : 'Start typing to see neural suggestions...';
+        if (aiPlaceholder) aiPlaceholder.textContent = readyText;
     }
     else if (data.status === 'complete') {
         // The AI has finished generating predictions
         if (spinner) spinner.classList.remove('visible');
         
         if (!data.suggestions || data.suggestions.length === 0) {
-            row.innerHTML = '<span class="ai-placeholder">No suggestions found...</span>';
+            const noneText = (typeof getUIString === 'function')
+                ? getUIString(window.UI_IDX?.AI_NONE ?? 36)
+                : 'No suggestions found...';
+            row.innerHTML = `<span class="ai-placeholder">${noneText}</span>`;
             return;
         }
 
@@ -96,7 +102,11 @@ function clearMessage() {
 // ─── NEURAL AUTOFILL LOGIC ───
 function clearAISuggestions() {
     const row = document.getElementById('aiSuggestions');
-    if (row) row.innerHTML = '<span class="ai-placeholder">Start typing or selecting phrases to see suggestions…</span>';
+    if (!row) return;
+    const idleText = (typeof getUIString === 'function')
+        ? getUIString(window.UI_IDX?.AI_IDLE ?? 3)
+        : 'Start typing or selecting phrases to see AI suggestions…';
+    row.innerHTML = `<span class="ai-placeholder">${idleText}</span>`;
 }
 
 function scheduleAI(text) {

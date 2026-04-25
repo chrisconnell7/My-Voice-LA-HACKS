@@ -15,6 +15,21 @@
 // }
 
 const translationCache = {};
+// Map your app's language codes to NLLB's FLORES-200 codes
+const nllbLangMap = {
+    'en-US': 'eng_Latn',
+    'es-US': 'spa_Latn',
+    'zh-CN': 'zho_Hans',
+    'tl-PH': 'tgl_Latn', // Tagalog
+    'vi-VN': 'vie_Latn',
+    'ar-SA': 'arb_Arab',
+    'fr-FR': 'fra_Latn',
+    'ko-KR': 'kor_Hang',
+    'ru-RU': 'rus_Cyrl',
+    'hi-IN': 'hin_Deva'
+};
+
+let translatorPipeline = null;
 
 // ─── Snapshot of the original English category phrases (excluding Doctor,
 //     which is user-managed and translated separately).
@@ -23,17 +38,109 @@ const originalCategoryData = JSON.parse(JSON.stringify(
 ));
 
 // The fixed UI strings we translate (order matters — applyUIStrings uses indices).
+// ⚠️  If you add strings here, add them to applyUIStrings() AND keep indices in sync.
 const UI_STRINGS_EN = [
+    // 0  – message section label
     'Message',
+    // 1  – AI section label
     'AI Suggested Continuations',
+    // 2  – AI sub-label
     'Suggestions based on your message',
+    // 3  – AI placeholder (idle)
     'Start typing or selecting phrases to see AI suggestions…',
+    // 4  – suggestions section label
     'You might want to say:',
+    // 5  – categories section label
     'Browse by category:',
+    // 6  – footer hint
     'Look at a button for a moment to select it',
+    // 7  – speak button (message area)
     'Speak',
+    // 8  – keyboard toggle button
     'Keyboard',
+    // 9  – sidebar: clear
+    'Clear',
+    // 10 – sidebar: back
+    'Back',
+    // 11 – sidebar: speak
+    'Speak',
+    // 12 – header status badge
+    'Eye Tracking Active',
+    // 13 – menu section: Language
+    'Language',
+    // 14 – menu language change link
+    'Change →',
+    // 15 – menu section: Navigation
+    'Navigation',
+    // 16 – menu item: Keyboard
+    'Keyboard',
+    // 17 – menu item: Doctor Prompts
+    'Doctor Prompts',
+    // 18 – menu section: App
+    'App',
+    // 19 – menu item: Settings
+    'Settings',
+    // 20 – menu item: Help
+    'Help',
+    // 21 – doctor modal title
+    '🩺 Doctor Prompts',
+    // 22 – doctor tab: saved phrases
+    '📋 Saved Phrases',
+    // 23 – doctor tab: AI generate
+    '✨ AI Generate',
+    // 24 – doctor saved panel hint
+    'Click ▶ to insert a phrase into the message, or 🗑 to delete it.',
+    // 25 – doctor "Add Manually" label
+    'Add Manually',
+    // 26 – doctor add button
+    '+ Add',
+    // 27 – doctor done button
+    '✅ Done',
+    // 28 – doctor AI input label
+    '📝 Describe patient context',
+    // 29 – doctor AI textarea placeholder
+    'Enter symptoms, diagnosis, procedures, medications, or any relevant clinical context…\n\ne.g. Post-op abdominal surgery, patient has diabetes, possible infection risk',
+    // 30 – doctor file divider
+    'or upload a file',
+    // 31 – doctor file drop title
+    'Drop a .md or .txt file here',
+    // 32 – doctor file drop subtitle
+    'Patient notes, symptom lists, care plans, or clinical markdown',
+    // 33 – doctor generate button label
+    '✨ Generate Phrase Suggestions',
+    // 34 – doctor generated results label
+    'Suggested phrases — click to use or save',
+    // 35 – doctor save all button
+    '💾 Save All to Phrases',
+    // 36 – AI placeholder (no results)
+    'No suggestions found...',
+    // 37 – AI placeholder (model ready)
+    'Start typing to see neural suggestions...',
+    // 38 – language modal title
+    '🌐 Select Language',
+    // 39 – language search placeholder
+    'Search languages…',
+    // 40 – language apply button
+    '✅ Apply Language',
 ];
+
+async function getTranslator() {
+    if (!translatorPipeline) {
+        // Update the UI banner so the user knows a large download is happening
+        let banner = document.getElementById('translatingBanner');
+        if (banner) banner.textContent = 'Downloading offline translation model (first time only)...';
+        
+        // Dynamically import transformers.js so we don't break the non-module script tag
+        const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
+        env.allowLocalModels = false; 
+
+        // Load the distilled NLLB model
+        translatorPipeline = await pipeline('translation', 'Xenova/nllb-200-distilled-600M');
+        
+        if (banner) banner.textContent = 'Translating…';
+    }
+    return translatorPipeline;
+}
 
 
 // ─── LANGUAGE PICKER UI ───────────────────────────────────────────────────
@@ -110,7 +217,6 @@ async function applyLanguage() {
 // ─── CORE TRANSLATION PIPELINE ───────────────────────────────────────────
 
 async function translatePageToLanguage(lang) {
-    // English is the source — just restore originals.
     if (lang.code === 'en-US') {
         restoreEnglishUI();
         return;
@@ -119,12 +225,10 @@ async function translatePageToLanguage(lang) {
     showTranslatingBanner(true);
 
     try {
-        // Build (or refresh) the cache entry for this language.
         const cache = await buildTranslationCache(lang);
         applyTranslation(cache);
     } catch (e) {
         console.error('Translation failed:', e);
-        // Fall back gracefully — leave whatever was already rendered.
     } finally {
         showTranslatingBanner(false);
     }
@@ -132,30 +236,29 @@ async function translatePageToLanguage(lang) {
 
 /**
  * Returns a fully-populated translation cache entry for `lang`.
- *
- * We always translate the fixed phrases + UI strings fresh when first
- * requested (cached thereafter). Doctor prompts are included if they
- * exist and haven't been translated into this language yet.
+ * Performs one batched API call covering all phrases, category labels,
+ * UI strings, and doctor prompts.
  */
 async function buildTranslationCache(lang) {
     const code = lang.code;
     const existing = translationCache[code];
 
-    // Collect what needs translating.
     const needsFullTranslation = !existing;
     const currentDoctorTexts = doctorPrompts.map(p => p.text);
     const cachedDoctorTexts  = existing?.doctorSourceTexts || [];
     const needsDoctorUpdate  = JSON.stringify(currentDoctorTexts) !== JSON.stringify(cachedDoctorTexts);
 
     if (!needsFullTranslation && !needsDoctorUpdate) {
-        return existing; // Already fully up-to-date.
+        return existing;
     }
 
-    // ── Assemble the payload ──────────────────────────────────────────────
-    // Flatten phrases to a plain array so the JSON stays small and the
-    // model doesn't get confused by nested objects.
+    // Initialize the local AI
+    const translator = await getTranslator();
+    const targetLangCode = nllbLangMap[code];
+
+    // 1. Flatten all texts into a single array
     const phraseTexts = [];
-    const phraseIndex = {}; // catKey -> [startIdx, count]
+    const phraseIndex = {};
     Object.entries(originalCategoryData).forEach(([cat, phrases]) => {
         phraseIndex[cat] = [phraseTexts.length, phrases.length];
         phrases.forEach(p => phraseTexts.push(p.text));
@@ -163,67 +266,58 @@ async function buildTranslationCache(lang) {
 
     const catKeys = categoryMeta.filter(m => m.key !== 'Doctor').map(m => m.key);
 
-    const payload = {
-        phraseTexts,          // flat array of English phrase texts
-        catKeys,              // category label strings to translate
-        uiStrings: UI_STRINGS_EN,
-        doctorTexts: currentDoctorTexts,
-    };
+    const allTextsToTranslate = [
+        ...phraseTexts,
+        ...catKeys,
+        ...UI_STRINGS_EN,
+        ...currentDoctorTexts
+    ];
 
-    // ── Single API call ───────────────────────────────────────────────────
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 4000,
-            system: `You are a medical translation assistant specialising in AAC (Augmentative and Alternative Communication) for hospital patients.
-
-Translate every string in the input JSON into ${lang.english} (${lang.native}).
-Rules:
-- Keep translations short and natural — these appear on buttons and UI labels.
-- Preserve first-person phrasing for patient phrases (e.g. "I am in pain").
-- Keep medical accuracy.
-- Return ONLY a valid JSON object — no markdown fences, no preamble — with exactly these keys:
-  {
-    "phraseTexts": [...],   // same length as input phraseTexts
-    "catKeys":    [...],   // same length as input catKeys
-    "uiStrings":  [...],   // same length as input uiStrings
-    "doctorTexts":[...]    // same length as input doctorTexts
-  }`,
-            messages: [{
-                role: 'user',
-                content: JSON.stringify(payload),
-            }],
-        }),
+    // 2. Perform the translation locally
+    // NLLB can take an array of strings and translate them in bulk
+    const results = await translator(allTextsToTranslate, {
+        src_lang: 'eng_Latn',
+        tgt_lang: targetLangCode
     });
 
-    const data = await response.json();
-    const raw  = data.content.map(i => i.text || '').join('');
-    const result = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    const translatedStrings = results.map(res => res.translation_text);
 
-    // ── Re-assemble into the cache structure ─────────────────────────────
+    // 3. Unpack the flat array back into distinct categories
+    let offset = 0;
+    
+    const translatedPhraseTexts = translatedStrings.slice(offset, offset + phraseTexts.length);
+    offset += phraseTexts.length;
+
+    const translatedCatKeys = translatedStrings.slice(offset, offset + catKeys.length);
+    offset += catKeys.length;
+
+    const translatedUIStrings = translatedStrings.slice(offset, offset + UI_STRINGS_EN.length);
+    offset += UI_STRINGS_EN.length;
+
+    const translatedDoctorTexts = translatedStrings.slice(offset, offset + currentDoctorTexts.length);
+
+    // 4. Build and save the cache
     const cache = {
         phrases: {},
         catLabels: {},
-        uiValues: result.uiStrings,
+        uiValues: translatedUIStrings,
         doctorPhrases: doctorPrompts.map((p, i) => ({
             icon: p.icon,
-            text: result.doctorTexts[i] || p.text,
+            text: translatedDoctorTexts[i] || p.text,
         })),
-        doctorSourceTexts: currentDoctorTexts, // track what we translated
+        doctorSourceTexts: currentDoctorTexts,
     };
 
     Object.entries(originalCategoryData).forEach(([cat, phrases]) => {
-        const [start, count] = phraseIndex[cat];
+        const [start] = phraseIndex[cat];
         cache.phrases[cat] = phrases.map((p, i) => ({
             icon: p.icon,
-            text: result.phraseTexts[start + i] || p.text,
+            text: translatedPhraseTexts[start + i] || p.text,
         }));
     });
 
     catKeys.forEach((key, i) => {
-        cache.catLabels[key] = result.catKeys[i] || key;
+        cache.catLabels[key] = translatedCatKeys[i] || key;
     });
 
     translationCache[code] = cache;
@@ -234,27 +328,22 @@ Rules:
 // ─── APPLY / RESTORE ──────────────────────────────────────────────────────
 
 function applyTranslation(cache) {
-    // Phrase tiles
     Object.entries(cache.phrases).forEach(([cat, phrases]) => {
         categoryData[cat] = phrases;
     });
 
-    // Category button labels
     categoryMeta.forEach(m => {
         if (m.key !== 'Doctor') {
             m._displayKey = cache.catLabels[m.key] || null;
         }
     });
 
-    // Doctor prompts (translated)
     if (cache.doctorPhrases && cache.doctorPhrases.length > 0) {
         categoryData['Doctor'] = cache.doctorPhrases;
     }
 
-    // Static UI strings
     applyUIStrings(cache.uiValues);
 
-    // Refresh rendered components
     if (typeof updateKeyboardLabel === 'function') updateKeyboardLabel();
     if (typeof renderCategories   === 'function') renderCategories();
     if (typeof renderSuggestions  === 'function') renderSuggestions();
@@ -263,15 +352,12 @@ function applyTranslation(cache) {
 }
 
 function restoreEnglishUI() {
-    // Reset phrases to original English
     Object.entries(originalCategoryData).forEach(([cat, phrases]) => {
         categoryData[cat] = phrases.map(p => ({ ...p }));
     });
 
-    // Reset category display labels
     categoryMeta.forEach(m => { m._displayKey = null; });
 
-    // Restore doctor prompts (English)
     if (typeof syncDoctorCategoryFull === 'function') syncDoctorCategoryFull();
 
     applyUIStrings(null);
@@ -284,13 +370,18 @@ function restoreEnglishUI() {
 }
 
 
-// ─── UI STRING HELPERS ────────────────────────────────────────────────────
+// ─── UI STRING APPLICATION ────────────────────────────────────────────────
 
+/**
+ * Write all UI strings into the DOM.
+ * Pass null to reset every element back to its English default.
+ */
 function applyUIStrings(v) {
-    const s = v || UI_STRINGS_EN;
-    const safe = i => s[i] || UI_STRINGS_EN[i];
+    const s    = v || UI_STRINGS_EN;
+    const safe = i => (s[i] != null ? s[i] : UI_STRINGS_EN[i]);
     const el   = (sel, txt) => { const e = document.querySelector(sel); if (e) e.textContent = txt; };
 
+    // ── Main page ─────────────────────────────────────────────────────────
     el('.message-section .section-label',    safe(0));
     el('.ai-section .section-label',         safe(1));
 
@@ -300,8 +391,8 @@ function applyUIStrings(v) {
     const aiPh = document.querySelector('#aiSuggestions .ai-placeholder');
     if (aiPh) aiPh.textContent = safe(3);
 
-    el('.suggestions-section .section-label',  safe(4));
-    el('.categories-section .section-label',   safe(5));
+    el('.suggestions-section .section-label', safe(4));
+    el('.categories-section .section-label',  safe(5));
 
     const footer = document.querySelector('.footer span:last-child');
     if (footer) footer.textContent = ' ' + safe(6);
@@ -311,7 +402,134 @@ function applyUIStrings(v) {
 
     const kbSpan = document.querySelector('.keyboard-toggle-btn span:last-child');
     if (kbSpan) kbSpan.textContent = safe(8);
+
+    // ── Action sidebar ────────────────────────────────────────────────────
+    // Each .action-btn has: <div class="action-icon">…</div> <div>Label</div>
+    const sidebarBtns = document.querySelectorAll('.action-sidebar .action-btn');
+    [9, 10, 11].forEach((strIdx, i) => {
+        if (!sidebarBtns[i]) return;
+        const label = sidebarBtns[i].querySelector('div:last-child');
+        if (label) label.textContent = safe(strIdx);
+    });
+
+    // ── Header status badge ───────────────────────────────────────────────
+    const statusSpan = document.querySelector('.status-badge span');
+    if (statusSpan) statusSpan.textContent = safe(12);
+
+    // ── Menu drawer ───────────────────────────────────────────────────────
+    const menuSections = document.querySelectorAll('.menu-section-title');
+    // Order in HTML: Language (0), Navigation (1), App (2)
+    if (menuSections[0]) menuSections[0].textContent = safe(13);
+    if (menuSections[1]) menuSections[1].textContent = safe(15);
+    if (menuSections[2]) menuSections[2].textContent = safe(18);
+
+    const menuLangChange = document.querySelector('.menu-lang-change');
+    if (menuLangChange) menuLangChange.textContent = safe(14);
+
+    // Menu items — rebuild innerHTML to preserve the icon span
+    const menuItems = document.querySelectorAll('.menu-item');
+    const menuItemDefs = [
+        [0, '⌨️', 16],
+        [1, '🩺', 17],
+        [2, '⚙️', 19],
+        [3, '💬', 20],
+    ];
+    menuItemDefs.forEach(([idx, icon, strIdx]) => {
+        if (menuItems[idx]) {
+            menuItems[idx].innerHTML = `<span class="menu-item-icon">${icon}</span> ${safe(strIdx)}`;
+        }
+    });
+
+    // ── Doctor modal ──────────────────────────────────────────────────────
+    const docModalTitle = document.querySelector('.modal-title');
+    if (docModalTitle) docModalTitle.textContent = safe(21);
+
+    const tabSaved = document.getElementById('tab-saved');
+    if (tabSaved) tabSaved.textContent = safe(22);
+
+    const tabGen = document.getElementById('tab-generate');
+    if (tabGen) tabGen.textContent = safe(23);
+
+    // Saved panel: hint text (first div inside #panel-saved)
+    const savedHint = document.querySelector('#panel-saved > div:first-child');
+    if (savedHint) savedHint.textContent = safe(24);
+
+    // "Add Manually" label — find it by data attribute we stamp on first write
+    let addManuallyEl = document.querySelector('[data-i18n="addManually"]');
+    if (!addManuallyEl) {
+        // First time: find by current English text and stamp the attribute
+        document.querySelectorAll('#panel-saved div').forEach(d => {
+            if (d.textContent.trim() === 'Add Manually') {
+                d.setAttribute('data-i18n', 'addManually');
+                addManuallyEl = d;
+            }
+        });
+    }
+    if (addManuallyEl) addManuallyEl.textContent = safe(25);
+
+    const promptAddBtn = document.querySelector('.prompt-add-btn');
+    if (promptAddBtn) promptAddBtn.textContent = safe(26);
+
+    const modalApplyBtn = document.querySelector('.modal-apply-btn');
+    if (modalApplyBtn) modalApplyBtn.textContent = safe(27);
+
+    // AI generate panel
+    const aiInputLabel = document.querySelector('.ai-input-label');
+    if (aiInputLabel) aiInputLabel.textContent = safe(28);
+
+    const aiTextInput = document.querySelector('.ai-text-input');
+    if (aiTextInput) aiTextInput.placeholder = safe(29);
+
+    const aiDivider = document.querySelector('.ai-divider');
+    if (aiDivider) aiDivider.textContent = safe(30);
+
+    const fileDropTitle = document.querySelector('.file-drop-title');
+    if (fileDropTitle) fileDropTitle.textContent = safe(31);
+
+    const fileDropSub = document.querySelector('.file-drop-sub');
+    if (fileDropSub) fileDropSub.textContent = safe(32);
+
+    // Generate button — don't overwrite while mid-generation (button is disabled)
+    const genBtn      = document.getElementById('generateBtn');
+    const genBtnLabel = document.getElementById('generateBtnLabel');
+    if (genBtnLabel && genBtn && !genBtn.disabled) {
+        genBtnLabel.textContent = safe(33);
+    }
+
+    const generatedLabel = document.querySelector('.generated-label');
+    if (generatedLabel) generatedLabel.textContent = safe(34);
+
+    const saveAllBtn = document.querySelector('.save-all-btn');
+    if (saveAllBtn) saveAllBtn.textContent = safe(35);
+
+    // ── Language modal ────────────────────────────────────────────────────
+    const langModalTitle = document.querySelector('.lang-modal-title');
+    if (langModalTitle) langModalTitle.textContent = safe(38);
+
+    const langSearch = document.getElementById('langSearch');
+    if (langSearch) langSearch.placeholder = safe(39);
+
+    const langApplyBtn = document.querySelector('.lang-apply-btn');
+    if (langApplyBtn) langApplyBtn.textContent = safe(40);
 }
+
+/**
+ * Get a single translated UI string by index.
+ * main.js uses this for dynamically-set placeholder text.
+ */
+function getUIString(index) {
+    if (currentLang.code === 'en-US') return UI_STRINGS_EN[index];
+    const cache = translationCache[currentLang.code];
+    return cache?.uiValues?.[index] ?? UI_STRINGS_EN[index];
+}
+
+// Expose helpers to global scope for use in main.js / other non-module scripts
+window.getUIString = getUIString;
+window.UI_IDX = {
+    AI_IDLE:   3,
+    AI_NONE:  36,
+    AI_READY: 37,
+};
 
 function showTranslatingBanner(show) {
     let b = document.getElementById('translatingBanner');
@@ -336,13 +554,10 @@ async function translateDoctorPromptsIfNeeded() {
 
     const code = currentLang.code;
 
-    // Invalidate the cached doctor phrases so buildTranslationCache re-fetches them.
     if (translationCache[code]) {
         translationCache[code].doctorSourceTexts = null;
     }
 
-    // Re-translate (only doctor section changes, but we reuse the full pipeline
-    // so the cache stays consistent).
     showTranslatingBanner(true);
     try {
         const cache = await buildTranslationCache(currentLang);
