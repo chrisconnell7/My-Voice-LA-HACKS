@@ -25,7 +25,7 @@ body {
     padding: 20px 24px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 8px;
 }
 
 /* Header */
@@ -106,7 +106,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 0px;
     position: relative;
 }
 .section-label {
@@ -115,7 +115,7 @@ body {
     color: #3b6fd4;
     text-transform: uppercase;
     letter-spacing: 1.2px;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     display: flex;
     align-items: center;
     gap: 7px;
@@ -191,15 +191,15 @@ body {
     background: linear-gradient(135deg, #f5f0ff 0%, #ebe4fd 100%);
     border: 2px solid #c4b5fd;
     border-radius: 16px;
-    padding: 14px 20px;
-    min-height: 60px;
+    padding: 10px 16px;
+    min-height: 44px;
     box-shadow: 0 4px 16px rgba(124, 58, 237, 0.08);
 }
 
 .ai-label {
     display: flex; align-items: center; gap: 8px;
     color: #7c3aed; font-weight: 600; font-size: 14px;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
 }
 
 .ai-spinner {
@@ -247,7 +247,7 @@ body {
     background: white;
     border: 2px solid #dce8ff;
     border-radius: 14px;
-    padding: 12px 14px;
+    padding: 8px 14px;
     text-align: center;
     cursor: pointer;
     transition: all 0.2s;
@@ -353,7 +353,7 @@ body {
     background: linear-gradient(160deg, #f0f5ff, #e8eeff);
     border: 2px solid #dce8ff;
     border-radius: 14px;
-    padding: 12px 16px;
+    padding: 8px 16px;
     text-align: center;
     cursor: pointer;
     transition: all 0.2s;
@@ -591,7 +591,7 @@ body {
 /* Action Sidebar */
 .action-sidebar {
     position: fixed;
-    top: 145px;        /* below header (~60px) + section label (~28px) + gap (~30px) */
+    top: 128px;        /* below header (~60px) + section label (~28px) + gap (~30px) */
     right: 36px;
     display: flex;
     flex-direction: row;
@@ -792,12 +792,13 @@ body {
     color: #7c8ba3;
     font-size: 13px;
     margin-top: 0;
-    padding-top: 12px;
+    padding-top: 6px;
     border-top: 2px solid #e0e8f8;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
+    flex-shrink: 0;
 }
 
 /* Responsive */
