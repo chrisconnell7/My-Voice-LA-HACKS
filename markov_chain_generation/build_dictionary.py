@@ -58,8 +58,10 @@ if __name__ == "__main__":
     builder = SmartMarkovBuilder()
     
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    csv_path = os.path.join(script_dir, 'medical_qa.csv')
-    json_path = os.path.join(script_dir, 'markov_dictionary.json')
+    
+    # Go up one folder (..), then into 'data', then grab the files
+    csv_path = os.path.join(script_dir, '..', 'data', 'medical_qa.csv')
+    json_path = os.path.join(script_dir, '..', 'data', 'markov_dictionary.json')
     
     builder.process_csv(csv_path, target_column='Patient')
     builder.export_json(json_path)

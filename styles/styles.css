@@ -704,14 +704,14 @@ body {
     left: 0;
     width: 40px;
     height: 40px;
-    pointer-events: none; /* Ensures the ring doesn't block actual clicks */
+    pointer-events: none; 
     z-index: 99999;
-    /* Optional: hide the ring entirely until a hover happens */
-    /* opacity: 0; */
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.2s ease; /* Smooth fade in/out */
 }
 
-/* Rotate the SVG so the progress animation starts at the 12 o'clock position */
 #dwell-cursor svg {
+    /* Rotate so progress starts at 12 o'clock */
     transform: rotate(-90deg);
 }
 
@@ -722,27 +722,61 @@ body {
 }
 
 .dwell-bg {
-    stroke: rgba(0, 0, 0, 0.15); /* Faint background ring */
+    stroke: rgba(0, 0, 0, 0.1); /* Faint background track */
 }
 
 .dwell-progress {
-    stroke: #0066cc; /* Match your app's blue theme */
-    /* Math: 2 * pi * radius (16) ≈ 101 */
+    fill: none;
+    stroke: #2196f3;
+    stroke-width: 4;
+    stroke-linecap: round;
     stroke-dasharray: 101; 
-    stroke-dashoffset: 101; /* Hides the stroke by pushing it out of view */
+    stroke-dashoffset: 101;
+    /* Shorter transition prevents the blue from "hanging" */
+    transition: stroke-dashoffset 0.05s linear; 
 }
 
-/* When the JavaScript adds the .dwelling class, animate the offset to 0 */
-#dwell-cursor.dwelling .dwell-progress {
-    animation: dwell-fill-circle 1s linear forwards;
+/* ─── MESSAGE INTERFACE ─── */
+#messageText {
+    /* The "Nuclear" Fix for the double cursor */
+    caret-color: transparent !important;
+    outline: none !important;
+    
+    /* Interaction settings */
+    user-select: none; 
+    cursor: default;
+    
+    /* Visuals */
+    font-size: 32px;
+    min-height: 100px;
+    padding: 20px;
+    line-height: 1.4;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+
+
+    /* This is the magic line that allows double spaces */
+    white-space: pre-wrap !important; 
+    
+    /* Ensure the browser's black cursor stays hidden */
+    caret-color: transparent !important;
+    outline: none !important;
 }
 
-/* Optional: Fade the whole ring in only when dwelling */
-/* #dwell-cursor.dwelling {
-    opacity: 1;
-} 
-*/
+/* ─── CUSTOM AAC CURSOR ─── */
+.cursor {
+    display: inline-block;
+    width: 3px;
+    height: 1.2em;
+    background-color: #2196f3;
+    margin-left: 2px;
+    vertical-align: middle;
+    /* Custom blink rate for eye-tracking comfort */
+    animation: blink-cursor 1s step-end infinite;
+}
 
-@keyframes dwell-fill-circle {
-    to { stroke-dashoffset: 0; }
+@keyframes blink-cursor {
+    from, to { opacity: 1; }
+    50% { opacity: 0; }
 }

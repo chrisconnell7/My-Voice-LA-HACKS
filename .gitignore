@@ -1,2 +1,2 @@
-markov_chain_generation/medical_qa.csv
+data/medical_qa.csv
 .env
