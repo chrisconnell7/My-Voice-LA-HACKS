@@ -1,4 +1,20 @@
+### For general Python dependencies
 flask
 flask-cors
-google-cloud-aiplatform
+# google-cloud-aiplatform
 python-dotenv
+
+### For AI Studio and Gemini API
+torch
+torchvision
+torchaudio
+google-genai
+
+### To load smaller model
+bitsandbytes
+
+### Specifically for audio processing
+transformers
+accelerate
+librosa 
+soundfile

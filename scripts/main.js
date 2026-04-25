@@ -221,7 +221,7 @@ document.addEventListener('mouseout', (e) => {
     }
 });
 document.addEventListener('mouseover', (e) => {
-    const target = e.target.closest('button, .ai-chip, .suggestion-btn, .category-btn, .key');
+    const target = e.target.closest('button, .ai-chip, .suggestion-btn, .category-btn, .key, .action-btn');
     if (target) {
         isHovering = true;
         currentTarget = target;
