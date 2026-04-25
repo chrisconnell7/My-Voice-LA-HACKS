@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Voice - AAC Application</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="hamburger" onclick="toggleMenu()">☰</div>
+            <div class="title">My Voice</div>
+        </div>
+        <div class="status-badge">
+            <div class="status-dot"></div>
+            <span>Eye Tracking Active</span>
+        </div>
+        <div class="header-right">
+            <button class="icon-btn keyboard-toggle-btn" id="keyboardToggleBtn" onclick="toggleKeyboard()">
+                <span>⌨️</span>
+                <span>Keyboard</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Message Section -->
+    <div class="message-section">
+        <div class="section-label">Message</div>
+        <div class="message-row">
+            <div class="message-box">
+                <div class="message-text" id="messageText"><span class="cursor"></span></div>
+            </div>
+            <button class="speak-btn" onclick="speakMessage()">
+                <span>🔊</span>
+                <span>Speak</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Keyboard (toggleable) -->
+    <div class="keyboard-section" id="keyboardSection">
+        <div class="keyboard-outer-wrapper">
+            <!-- Numpad on the left -->
+            <div class="numpad-wrapper">
+                <div class="numpad-grid" id="numpadGrid"></div>
+            </div>
+            <!-- Main keyboard -->
+            <div class="keyboard-wrapper">
+                <div id="keyboardLangLabel" style="font-size:13px;font-weight:600;color:#7c8ba3;margin-bottom:10px;text-align:center;letter-spacing:0.3px;"></div>
+                <div class="keyboard-rows" id="keyboardRows"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Autofill Section -->
+    <div class="ai-section">
+        <div class="section-label">AI Suggested Continuations</div>
+        <div class="ai-box">
+            <div class="ai-label">
+                <span>✨</span>
+                <span>Suggestions based on your message</span>
+                <div class="ai-spinner" id="aiSpinner"></div>
+            </div>
+            <div class="ai-suggestions-row" id="aiSuggestions">
+                <span class="ai-placeholder">Start typing or selecting phrases to see AI suggestions…</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Suggestions -->
+    <div class="suggestions-section">
+        <div class="section-label">You might want to say:</div>
+        <div class="suggestions-grid" id="suggestionsGrid"></div>
+    </div>
+
+    <!-- Categories -->
+    <div class="categories-section">
+        <div class="section-label">Browse by category:</div>
+        <div class="categories-grid" id="categoriesGrid"></div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <span>ℹ️</span>
+        <span> Look at a button for a moment to select it</span>
+    </div>
+</div>
+
+<!-- Action Sidebar -->
+<div class="action-sidebar">
+    <button class="action-btn clear" onclick="clearMessage()">
+        <div class="action-icon">✕</div>
+        <div>Clear</div>
+    </button>
+    <button class="action-btn backspace" onclick="backspace()">
+        <div class="action-icon">←</div>
+        <div>Back</div>
+    </button>
+    <button class="action-btn speak-message" onclick="speakMessage()">
+        <div class="action-icon">💬</div>
+        <div>Speak</div>
+    </button>
+</div>
+
+<!-- Doctor Prompts Modal -->
+<div class="modal-overlay" id="doctorModal">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">🩺 Doctor Prompts</div>
+            <button class="modal-close" onclick="closeDoctorModal()">✕</button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="doc-tabs">
+            <button class="doc-tab active" id="tab-saved" onclick="switchDocTab('saved')">📋 Saved Phrases</button>
+            <button class="doc-tab" id="tab-generate" onclick="switchDocTab('generate')">✨ AI Generate</button>
+        </div>
+
+        <div class="doc-modal-body">
+            <!-- Saved Phrases Panel -->
+            <div class="doc-panel active" id="panel-saved">
+                <div style="font-size:13px;color:#7c8ba3;margin-bottom:14px;">Click ▶ to insert a phrase into the message, or 🗑 to delete it.</div>
+                <div class="prompt-list" id="promptList"></div>
+                <div style="font-weight:600;color:#555;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:4px;">Add Manually</div>
+                <div class="prompt-add-row">
+                    <div class="prompt-emoji-picker" id="emojiPickerBtn" onclick="cycleEmoji()">🩺</div>
+                    <input class="prompt-input" id="newPromptInput" type="text"
+                           placeholder="e.g. Do you have chest pain?" maxlength="120"
+                           onkeydown="if(event.key==='Enter') addPrompt()" />
+                    <button class="prompt-add-btn" onclick="addPrompt()">+ Add</button>
+                </div>
+                <button class="modal-apply-btn" onclick="closeDoctorModal()" style="margin-top:18px;">✅ Done</button>
+            </div>
+
+            <!-- AI Generate Panel -->
+            <div class="doc-panel" id="panel-generate">
+                <div class="ai-input-section">
+                    <div class="ai-input-label">📝 Describe patient context</div>
+                    <textarea class="ai-text-input" id="aiContextInput"
+                        placeholder="Enter symptoms, diagnosis, procedures, medications, or any relevant clinical context…&#10;&#10;e.g. Post-op abdominal surgery, patient has diabetes, possible infection risk"></textarea>
+                </div>
+
+                <div class="ai-divider">or upload a file</div>
+
+                <div class="file-drop-zone" id="fileDropZone"
+                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+                    <input type="file" id="mdFileInput" accept=".md,.txt,.markdown" onchange="handleFileSelect(event)" />
+                    <div class="file-drop-icon">📄</div>
+                    <div class="file-drop-title">Drop a .md or .txt file here</div>
+                    <div class="file-drop-sub">Patient notes, symptom lists, care plans, or clinical markdown</div>
+                </div>
+                <div class="file-loaded" id="fileLoaded" style="display:none;">
+                    <span class="file-loaded-icon">✅</span>
+                    <span class="file-loaded-name" id="fileLoadedName"></span>
+                    <button class="file-clear-btn" onclick="clearFile()">✕</button>
+                </div>
+
+                <button class="generate-btn" id="generateBtn" onclick="generateFromContext()">
+                    <div class="generate-spinner" id="generateSpinner"></div>
+                    <span id="generateBtnLabel">✨ Generate Phrase Suggestions</span>
+                </button>
+
+                <div class="generated-results" id="generatedResults">
+                    <div class="generated-label">Suggested phrases — click to use or save</div>
+                    <div class="generated-grid" id="generatedGrid"></div>
+                    <button class="save-all-btn" onclick="saveAllGenerated()">💾 Save All to Phrases</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Menu Drawer -->
+<div class="menu-overlay" id="menuOverlay" onclick="handleMenuOverlayClick(event)">
+    <div class="menu-drawer">
+        <div class="menu-header">
+            <div class="menu-header-top">
+                <div class="menu-title">My Voice</div>
+                <button class="menu-close" onclick="toggleMenu()">✕</button>
+            </div>
+            <div class="menu-subtitle">AAC Communication App</div>
+        </div>
+        <div class="menu-body">
+            <div class="menu-section-title">Language</div>
+            <div class="menu-lang-current" id="menuLangCurrent" onclick="openLangModal()">
+                <span class="menu-lang-flag" id="menuLangFlag">🇺🇸</span>
+                <div class="menu-lang-info">
+                    <div class="menu-lang-name" id="menuLangName">English</div>
+                    <div class="menu-lang-sub" id="menuLangSub">English (US)</div>
+                </div>
+                <span class="menu-lang-change">Change →</span>
+            </div>
+
+            <div class="menu-section-title">Navigation</div>
+            <button class="menu-item" onclick="toggleMenu(); toggleKeyboard();">
+                <span class="menu-item-icon">⌨️</span> Keyboard
+            </button>
+            <button class="menu-item" onclick="toggleMenu(); openDoctorModal();">
+                <span class="menu-item-icon">🩺</span> Doctor Prompts
+            </button>
+
+            <div class="menu-section-title">App</div>
+            <button class="menu-item" onclick="toggleMenu(); openSettings();">
+                <span class="menu-item-icon">⚙️</span> Settings
+            </button>
+            <button class="menu-item" onclick="toggleMenu(); openHelp();">
+                <span class="menu-item-icon">💬</span> Help
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Language Selection Modal -->
+<div class="lang-modal-overlay" id="langModal">
+    <div class="lang-modal">
+        <div class="lang-modal-header">
+            <div class="lang-modal-title">🌐 Select Language</div>
+            <button class="modal-close" onclick="closeLangModal()">✕</button>
+        </div>
+        <div class="lang-search-wrap">
+            <input class="lang-search" id="langSearch" type="text" placeholder="Search languages…" oninput="filterLanguages()" />
+        </div>
+        <div class="lang-region-tabs" id="langRegionTabs"></div>
+        <div class="lang-list" id="langList"></div>
+        <div class="lang-modal-footer">
+            <button class="lang-apply-btn" onclick="applyLanguage()">✅ Apply Language</button>
+        </div>
+    </div>
+</div>
+
+<script src="data.js"></script>
+<script src="language.js"></script>
+<script src="doctor.js"></script>
+<script src="keyboard.js"></script>
+
+<script type="module" src="main.js"></script>
+</body>
+</html>
