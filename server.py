@@ -6,6 +6,8 @@ import requests
 import json
 from faster_whisper import WhisperModel
 import tempfile # Add this at the top
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app) 
@@ -122,6 +124,74 @@ def analyze_notes():
     except Exception as e:
         print(f"ERROR calling local Ollama model: {e}")
         return jsonify({"error": "Backend processing failed", "details": str(e)}), 500
+
+
+### TTS
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+
+@app.route('/tts', methods=['POST'])
+def text_to_speech():
+    data = request.json
+    text = data.get('text', '')
+    
+    # NEW: Grab the voice_id from the frontend request. 
+    # Fallback to your default ID if none is provided.
+    voice_id = data.get('voice_id', "goT3UYdM9bhm0n2lmKQx") 
+    
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+
+    headers = {
+        "Accept": "audio/mpeg",
+        "Content-Type": "application/json",
+        "xi-api-key": ELEVENLABS_API_KEY
+    }
+
+    payload = {
+        "text": text,
+        "model_id": "eleven_multilingual_v2",
+        "voice_settings": {
+            "stability": 0.5,
+            "similarity_boost": 0.75
+        }
+    }
+
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_code == 200:
+            return response.content, 200, {'Content-Type': 'audio/mpeg'}
+        else:
+            return jsonify({"error": "ElevenLabs API error", "details": response.text}), response.status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/clone-voice', methods=['POST'])
+def clone_voice():
+    if 'file' not in request.files:
+        return jsonify({"error": "No audio file provided"}), 400
+    
+    name = request.form.get('name', 'My Personalized Voice')
+    audio_file = request.files['file']
+    
+    url = "https://api.elevenlabs.io/v1/voices/add"
+    headers = {"xi-api-key": ELEVENLABS_API_KEY}
+    
+    # We send the file directly to ElevenLabs
+    files = [('files', (audio_file.filename, audio_file.read(), audio_file.mimetype))]
+    data = {
+        'name': name,
+        'description': 'A personalized voice clone created by the patient.'
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, data=data, files=files)
+        if response.status_code == 200:
+            return jsonify(response.json()), 200 # Returns the new voice_id
+        return jsonify({"error": response.text}), response.status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     print("=========================================")

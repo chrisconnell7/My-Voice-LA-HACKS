@@ -253,6 +253,46 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">⚙️ App Settings</div>
+            <button class="modal-close" onclick="closeSettings()">✕</button>
+        </div>
+
+        <div class="doc-modal-body">
+            <h3 style="margin-top:0;">Choose Your Voice</h3>
+            <div class="voice-grid" id="voiceGrid">
+                <button class="voice-card action-btn active" data-id="pNInz6obpgDQGcFmaJgB" onclick="window.selectVoice('pNInz6obpgDQGcFmaJgB')">
+                    <span class="voice-icon">👨</span> Adam
+                </button>
+                <button class="voice-card action-btn" data-id="21m00Tcm4TlvDq8ikWAM" onclick="window.selectVoice('21m00Tcm4TlvDq8ikWAM')">
+                    <span class="voice-icon">👩</span> Rachel
+                </button>
+                <button class="voice-card action-btn" data-id="ErXwobaYiN019PkySvjV" onclick="window.selectVoice('ErXwobaYiN019PkySvjV')">
+                    <span class="voice-icon">👦</span> Antoni
+                </button>
+                <button class="voice-card action-btn" data-id="AZnzlk1XvdvUeBnXmlld" onclick="window.selectVoice('AZnzlk1XvdvUeBnXmlld')">
+                    <span class="voice-icon">👧</span> Domi
+                </button>
+                <div id="customVoicePlaceholder"></div>
+            </div>
+
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+
+            <h3>Clone Your Original Voice</h3>
+            <p style="font-size:13px; color:#666;">Upload a 1-minute clip to generate your personalized AI voice.</p>
+            
+            <div class="clone-upload-row">
+                <input type="file" id="voiceUpload" accept="audio/*" onchange="window.handleVoiceClone()" style="font-size: 13px;">
+                <div id="cloneStatus" style="margin-top:10px; font-weight:600; font-size:14px;"></div>
+            </div>
+
+            <button class="modal-apply-btn" onclick="closeSettings()" style="margin-top:30px;">✅ Done</button>
+        </div>
+    </div>
+</div>
+
 <script src="./scripts/data.js"></script>
 <script src="./scripts/doctor.js"></script>
 <script src="./scripts/keyboard.js"></script>

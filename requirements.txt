@@ -1,7 +1,6 @@
 ### For general Python dependencies
 flask
 flask-cors
-# google-cloud-aiplatform
 python-dotenv
 
 ### For AI Functionality
