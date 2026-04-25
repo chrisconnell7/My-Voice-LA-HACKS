@@ -28,7 +28,7 @@ window.keyboardLayouts = {
 };
     
 // Global App State
-window.currentCategory = 'Feelings';
+window.currentCategory = 'Quickwords';
 window.currentLang = window.languages[0];
 window.doctorPrompts = [
     { icon: '🩺', text: 'Do you have chest pain?' },
@@ -199,7 +199,7 @@ window.staticTranslations = {
 };
 
 // 1. Load the English defaults automatically on startup
-window.categoryData = window.staticTranslations['en-US'].categories;
+window.categoryData = { ...window.staticTranslations['en-US'].categories };
 
 // 2. Initialize the Doctor category with any saved custom prompts
 window.categoryData['Doctor'] = window.doctorPrompts || [];

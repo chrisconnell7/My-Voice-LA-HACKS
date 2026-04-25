@@ -365,17 +365,18 @@ window.applyLanguage = () => {
         }
     });
 
-    // 5. Update Built-in Category Phrases
-    // 5. Update Built-in Category Phrases
+    // 5. Update Built-in Category Phrases 
     if (dict && dict.categories) {
-        // Swap out ALL built-in arrays with the translated ones
-        const enDefaults = window.staticTranslations['en-US'].categories;
-        window.categoryData['QuickWords'] = dict.categories.QuickWords || enDefaults.QuickWords;
-        window.categoryData['Medical'] = dict.categories.Medical || enDefaults.Medical;
-        window.categoryData['Feelings'] = dict.categories.Feelings || enDefaults.Feelings;
-        window.categoryData['Needs'] = dict.categories.Needs || enDefaults.Needs;
-        window.categoryData['People'] = dict.categories.People || enDefaults.People;
-        window.categoryData['Questions'] = dict.categories.Questions || enDefaults.Questions;
+        // Create a fresh copy of the target language categories
+        const newCategories = { ...dict.categories };
+        
+        // Merge them into the active state
+        Object.keys(newCategories).forEach(key => {
+            window.categoryData[key] = newCategories[key];
+        });
+
+        // Ensure Doctor prompts (which are user-generated, not translated) stay preserved
+        window.categoryData['Doctor'] = window.doctorPrompts || [];
     }
 
     // 6. INSTANTLY REFRESH BOTH GRIDS (This fixes your category delay!)
@@ -465,14 +466,18 @@ window.renderSuggestions = () => {
 };
 
 // ─── INITIALIZATION (Put this at the very bottom of main.js) ───
-window.addEventListener('DOMContentLoaded', () => {
-    // 1. Load the category buttons
-    if (typeof window.renderCategories === 'function') {
-        window.renderCategories();
-    }
-    
-    // 2. Load the phrases for the default category (Medical)
-    if (typeof window.renderSuggestions === 'function') {
-        window.renderSuggestions();
-    }
+// ─── STARTUP INIT ───
+document.addEventListener('DOMContentLoaded', () => {
+    // Set default category to QuickWords on launch
+    window.currentCategory = 'QuickWords'; 
+
+    window.renderCategories();
+    window.renderSuggestions();
+    window.setMessageContent(''); 
+
+    // Start background loading
+    ngramWorker.postMessage({ 
+        action: 'load', 
+        filePath: '../data/markov_dictionary.json' 
+    });
 });
