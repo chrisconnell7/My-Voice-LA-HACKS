@@ -589,13 +589,15 @@ class EyeTrackerCalibration {
     const meanX = xs.reduce((a, b) => a + b, 0) / xs.length;
     const meanY = ys.reduce((a, b) => a + b, 0) / ys.length;
 
+    const maxNoise = 5.0; // originally 1.0
+
     const varX = Math.max(
       xs.reduce((acc, val) => acc + Math.pow(val - meanX, 2), 0) / xs.length,
-      1.0,
+      maxNoise,
     );
     const varY = Math.max(
       ys.reduce((acc, val) => acc + Math.pow(val - meanY, 2), 0) / ys.length,
-      1.0,
+      maxNoise,
     );
 
     this.kalman.updateNoise(varX, varY);
