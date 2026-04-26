@@ -1,163 +1,125 @@
-# My-Voice-LA-HACKS
+# 👁️ My Voice
 
-My Voice: AAC Communication Application
+Eye-Controlled AI Communication for Immobilized Patients
 
-My Voice is a high-performance Augmentative and Alternative Communication (AAC) application designed for patients with speech or motor impairments. It combines high-speed eye-tracking-ready interfaces with a localized N-gram predictive engine and AI-driven clinical phrase generation.
+# 📖 About The Project
 
-🚀 Features
+My Voice is an Augmentative and Alternative Communication (AAC) platform designed specifically for paralyzed, immobilized, or critically ill patients who are unable to speak or use their hands.
 
-Momentum Dwell Engine: Eye-tracking ready interaction with a "forgiving" dwell ring that reverses progress on jitter rather than resetting.
+By leveraging browser-based eye-tracking, local AI models, and custom voice cloning, My Voice allows patients to seamlessly communicate their immediate needs, answer medical questions, and connect with their loved ones—using nothing but their gaze.
 
-Background AI Thread: Predictive typing powered by a Web Worker to ensure zero UI lag during heavy processing.
+Built by Chris, Kadon, and Ryan for LA Hacks 2026
 
-Gemma AI Integration: Context-aware clinical phrase generation based on patient notes or descriptions.
+# ✨ Key Features
 
-Multi-Language Support: Localized keyboard layouts (Latin, Spanish, Pinyin, French) and localized TTS.
+Magnetic Eye-Tracking: High-performance, hardware-accelerated eye tracking using MediaPipe and OpenCV. Features "Gravity Wells" (magnetic snapping) and a momentum-based dwell-click engine, making it effortless to type without exhausting the eyes.
 
-Smart Spacing: Intelligent punctuation and phrase-aware spacing logic.
+Context-Aware AI Suggestions: Analyzes doctors' clinical notes (via local Google Gemma LLM) to instantly generate and suggest hyper-relevant, patient-centric vocabulary based on their current condition (e.g., suggesting "nausea" or "pain" after surgery).
 
-🛠️ Installation & Setup
+Zero-Latency Word Prediction: A local N-gram Markov chain engine runs in a background Web Worker, providing instant predictive typing.
 
-1. Clone the Repository
+Custom Voice Cloning: Patients or family members can clone their original voice using ElevenLabs, restoring a deeply personal element to their communication.
 
-git clone <your-repository-url>
-cd MY-VOICE-LA-HACKS
+Multilingual Support & Translation: Real-time translation and keyboard layouts for English, Spanish, and Chinese.
+
+# 🛠️ Tech Stack
+
+Frontend: Vanilla HTML/CSS/JS, MediaPipe Vision Tasks, OpenCV.js WebAssembly
+
+Backend: Python, Flask
+
+AI & Machine Learning: * Ollama (Google Gemma 4:e2b) for contextual language processing
+
+Faster-Whisper (CPU optimized) for background audio transcription
+
+ElevenLabs API for Voice Cloning and TTS
+
+# 🚀 Setup Instructions
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed on your machine:
+
+Python 3.12+
+
+Ollama (For running local AI models)
+
+An ElevenLabs Account & API Key
+
+A code editor like VS Code with the Live Server extension installed.
+
+## 1. Clone the Repository
+
+Open your terminal and clone the repo:
+
+git clone [https://github.com/chrisconnell7/My-Voice-LA-HACKS.git](https://github.com/chrisconnell7/My-Voice-LA-HACKS.git)
+
+cd My-Voice-LA-HACKS
 
 
-2. Set Up Virtual Environment (venv)
+## 2. Set Up the Python Environment
 
-On Windows:
+Create and activate a virtual environment to keep dependencies clean:
 
-# Create the environment
+Windows:
+```
 python -m venv venv
-
-# Activate the environment
-.\venv\Scripts\activate
-
-
-On macOS / Linux:
-
-# Create the environment
-python3 -m venv venv
-
-# Activate the environment
-source venv/bin/activate
-
-
-3. Install Dependencies
-
+venv\Scripts\activate
 pip install -r requirements.txt
+```
+
+Mac/Linux:
+```
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+## 3. Configure Environment Variables
+
+Go to your ElevenLabs Profile and copy your API Key.
+
+In the root directory of the project, create a new file named `.env`.
+
+Paste the following into the .env file and save it:
+
+`ELEVENLABS_API_KEY=your_api_key_here`
 
 
-☁️ Google Cloud & Vertex AI Setup
+## 4. Initialize Local AI Models (Ollama)
 
-The "Doctor Prompts" generation feature uses Google's Gemma models via Vertex AI.
+We use Google's Gemma model locally to ensure patient data privacy. Open a new terminal window/powershell and run:
 
-Create a Project: Go to the Google Cloud Console and create a project.
-
-Enable APIs: Enable the Vertex AI API for your project.
-
-Install GCloud CLI: Install the Google Cloud SDK.
-
-Authenticate:
-
-gcloud init
-gcloud auth application-default login
+`ollama run gemma4:e2b`
 
 
-Environment Configuration
+Note: This will download the model to your machine. It may take a few minutes the very first time you run it depending on your internet connection.
 
-Create a .env file in the root directory and add your credentials:
+## 5. Run the Application
 
-GOOGLE_CLOUD_PROJECT="your-project-id-here"
-GOOGLE_API_KEY="your-api-key-here"
+You need to run both the Python backend and serve the HTML frontend.
 
+Start the Backend Server:
+In your original terminal (with the venv activated), start the Flask server:
 
-🎁 Bonus: Beginner's Guide to Google Cloud Setup
-
-If you've never used Google Cloud before, follow these steps to get everything running for free:
-
-1. Get Free Credits
-
-Google Cloud usually offers a $300 free trial for new users. Sign up at cloud.google.com/free. This will easily cover all the Gemma AI requests for this project.
-
-2. Create Your First Project
-
-Go to the Project Selector Page.
-
-Click Create Project.
-
-Give it a name (e.g., my-voice-aac) and click Create.
-
-Important: Copy the Project ID (it usually looks like my-voice-aac-123456). You'll need this for your .env file.
-
-3. Enable the Vertex AI API
-
-In the search bar at the top, type "Vertex AI".
-
-Click on Vertex AI from the results.
-
-Click the Enable All Recommended APIs button. This allows the Python server to talk to the Gemma model.
-
-4. Create an API Key (Alternative Method)
-
-If you don't want to use the CLI to log in, you can create a traditional API Key:
-
-Go to APIs & Services > Credentials.
-
-Click Create Credentials > API Key.
-
-Copy this key into your GOOGLE_API_KEY field in the .env file.
-
-🖥️ Running the Application
-
-0. Create the markov_dictionary.json
-
-Download this dataset: https://www.kaggle.com/datasets/yousefsaeedian/ai-medical-chatbot
-Rename it to medical_qa.csv and put it in the data folder
-Run build_dictionary.py and move the json file to the data folder
-
-1. Start the AI Backend
-
-The Python server handles the clinical text analysis and AI phrase generation.
-
-# Ensure venv is activated
-python server.py
+`python server.py`
 
 
-The server runs on http://127.0.0.1:5000.
+(The server will run on `http://localhost:5000`)
 
-2. Launch the Frontend
+Start the Frontend:
+To ensure webcam permissions and WebWorkers load correctly, the frontend must be served over a local web server (not just double-clicking the file).
 
-Because this app uses ES6 JavaScript Modules and Web Workers, it must be served via a web server.
+Open the project folder in VS Code.
 
-Using Python:
+Right-click index.html and select "Open with Live Server".
 
-python -m http.server 8000
+The app will launch in your browser. Accept the camera permissions to begin eye-tracking!
 
+# 🎯 Usage Notes
 
-Using VS Code: Use the Live Server extension to open index.html.
+Calibrating: Click the "Calibrate" button in the top left. Keep your head completely still and follow the animated dots with your eyes.
 
-Access the app at http://localhost:8000.
+Typing: Simply look at a key on the keyboard or a suggested phrase. The circular cursor will snap to the button and "fill up" to click it.
 
-📁 Project Structure
-
-index.html: Main application entry point.
-
-server.py: Flask backend for Vertex AI integration.
-
-/scripts:
-
-main.js: UI logic and Dwell Click engine.
-
-ngram-worker.js: Background thread for predictions.
-
-doctor.js: AI phrase generation and modal logic.
-
-/data: Contains markov_dictionary.json and clinical datasets.
-
-/styles: Application-wide CSS and layout definitions.
-
-📄 License
-
-This project was developed for LA Hacks 2026.
+Doctor Prompts: Upload a .md or .txt file of a clinical summary to automatically generate relevant QuickWords and phrases tailored to the patient's immediate medical context.
