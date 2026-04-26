@@ -198,3 +198,42 @@ if __name__ == '__main__':
     print("🏥 'My Voice' AI Backend Server Running!")
     print("=========================================")
     app.run(debug=True, port=5000)
+
+
+    # Add this to server.py
+
+@app.route('/translate-bridge', methods=['POST'])
+def translate_bridge():
+    data = request.json
+    text = data.get('text')
+    target_lang = data.get('target_lang', 'English')
+    direction = data.get('direction') # 'to_en' or 'from_en'
+
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+
+    # Determine prompt based on direction
+    if direction == 'to_en':
+        prompt = f"Translate the following text from {target_lang} to English. Return ONLY the translated text: '{text}'"
+    else:
+        # For batch translating the suggestions back
+        prompt = f"Translate this JSON list of English words into {target_lang}: {json.dumps(text)}. Return ONLY a raw JSON array of strings."
+
+    try:
+        response = requests.post(OLLAMA_API_URL, json={
+            "model": "gemma4:e2b", 
+            "prompt": prompt,
+            "stream": False,
+            "options": { "temperature": 0.0 } # 0 temp for literal translation
+        })
+        
+        raw_response = response.json().get('response', '').strip()
+        
+        # If we are going 'from_en', we expect a JSON list back
+        if direction == 'from_en':
+            return jsonify({"translations": json.loads(raw_response)})
+        
+        return jsonify({"translation": raw_response})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

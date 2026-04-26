@@ -14,7 +14,7 @@ self.onmessage = async (e) => {
 
     if (action === 'predict') {
         if (!engine) return;
-        const predictions = engine.getPredictions(text, limit, contextWords);
+        const predictions = await engine.getRemotePredictions(text, language || 'English', limit, contextWords);
         self.postMessage({ status: 'results', predictions });
     }
 };
