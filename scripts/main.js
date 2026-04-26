@@ -578,3 +578,65 @@ function moveVirtualCursor(x, y) {
         isHovering = false;
     }
 }
+
+/*
+function moveVirtualCursor(x, y) {
+    // 1. Grab every possible interactive element on the screen
+    const targets = Array.from(document.querySelectorAll('button, .ai-chip, .suggestion-btn, .category-btn, .key, .action-btn'));
+
+    let closestTarget = null;
+    let minDistance = 120; // MAGNETIC RADIUS: The cursor will snap to a button if the eyes are within 120px of it.
+
+    // 2. Do a quick geometry check to find the closest button
+    targets.forEach(target => {
+        // CRITICAL FOR YOUR KEYBOARD: Ignore elements that are hidden or off-screen
+        if (target.offsetParent === null) return; 
+
+        const rect = target.getBoundingClientRect();
+        
+        // Find the exact center of this button
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        // Calculate the distance from the user's gaze to the button's center
+        const dist = Math.hypot(x - centerX, y - centerY);
+
+        if (dist < minDistance) {
+            minDistance = dist;
+            closestTarget = target;
+        }
+    });
+
+    const ring = document.getElementById('dwell-cursor');
+
+    // 3. Route the behavior based on what we found
+    if (closestTarget) {
+        // WE FOUND A TARGET: Snap the visual ring to the exact center of the button!
+        const rect = closestTarget.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        if (ring) {
+            ring.style.transform = `translate(${centerX - 20}px, ${centerY - 20}px)`;
+        }
+
+        // Feed it to your existing Dwell Engine
+        if (closestTarget !== currentTarget) {
+            isHovering = true;
+            currentTarget = closestTarget;
+            dwellLockout = false;
+            
+            if (!animationFrame) animationFrame = requestAnimationFrame(updateDwell);
+        }
+    } else {
+        // LOOKING AT EMPTY SPACE: Let the ring float freely with the eyes
+        if (ring) {
+            ring.style.transform = `translate(${x - 20}px, ${y - 20}px)`;
+        }
+
+        // Reset the dwell engine so it drains
+        isHovering = false;
+        currentTarget = null; 
+    }
+}
+*/
