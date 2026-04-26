@@ -66,6 +66,10 @@ window.staticTranslations = {
             "Eye Tracking Active": "Eye Tracking Active",
             "Navigation": "Navigation",
             "Look at button at the bottom to select it": "Look at button at the bottom to select it",
+            "Auto Listen": "Auto Listen",
+            "Clear History": "Clear History",
+            "History": "History",
+            "Change Language": "Change Language",
             // Category Names
             "QuickWords": "QuickWords", "Doctor": "Doctor", "Medical": "Medical", "Feelings": "Feelings", "Needs": "Needs", "People": "People", "Questions": "Questions"
         },
@@ -77,12 +81,12 @@ window.staticTranslations = {
             Medical: [
                 { icon: '😣', text: "Pain" }, { icon: '😮‍💨', text: "Breathe" }, { icon: '🤢', text: "Nausea" },
                 { icon: '🤧', text: "Dizzy" }, { icon: '🫀', text: "Chest" }, { icon: '🤕', text: "Head" },
-                { icon: '💊', text: "Medicine" }, { icon: '🩻', text: "Scan" }
+                { icon: '💊', text: "Medicine" },
             ],
             Needs: [
                 { icon: '🚽', text: "Bathroom" }, { icon: '💧', text: "Water" }, { icon: '🛏️', text: "Bed" },
                 { icon: '🥶', text: "Cold" }, { icon: '🥵', text: "Hot" }, { icon: '痒', text: "Itch" },
-                { icon: '👓', text: "Glasses" }, { icon: '📱', text: "Phone" }
+                { icon: '👓', text: "Glasses" }, 
             ],
             Feelings: [
                 { icon: '😟', text: "Anxious" }, { icon: '😨', text: "Scared" }, { icon: '😠', text: "Frustrated" },
@@ -118,6 +122,10 @@ window.staticTranslations = {
             "Eye Tracking Active": "Seguimiento Ocular Activo",
             "Navigation": "Navegación",
             "Look at button at the bottom to select it": "Mira el botón en la parte inferior para seleccionarlo",
+            "Auto Listen": "Escucha Automática",
+            "History": "Historial",
+            "Clear History": "Borrar Historial",
+            "Change Language": "Cambiar Idioma",
             // Category Names
             "QuickWords": "Rápidas", "Doctor": "Médico", "Medical": "Salud", "Feelings": "Sentimientos", "Needs": "Necesidades", "People": "Personas", "Questions": "Preguntas"
         },
@@ -129,12 +137,12 @@ window.staticTranslations = {
             Medical: [
                 { icon: '😣', text: "Dolor" }, { icon: '😮‍💨', text: "Respirar" }, { icon: '🤢', text: "Náuseas" },
                 { icon: '🤧', text: "Mareo" }, { icon: '🫀', text: "Pecho" }, { icon: '🤕', text: "Cabeza" },
-                { icon: '💊', text: "Medicina" }, { icon: '🩻', text: "Examen" }
+                { icon: '💊', text: "Medicina" }, 
             ],
             Needs: [
                 { icon: '🚽', text: "Baño" }, { icon: '💧', text: "Agua" }, { icon: '🛏️', text: "Cama" },
                 { icon: '🥶', text: "Frío" }, { icon: '🥵', text: "Calor" }, { icon: '痒', text: "Picazón" },
-                { icon: '👓', text: "Gafas" }, { icon: '📱', text: "Teléfono" }
+                { icon: '👓', text: "Gafas" },
             ],
             Feelings: [
                 { icon: '😟', text: "Ansiedad" }, { icon: '😨', text: "Miedo" }, { icon: '😠', text: "Frustrado" },
@@ -170,6 +178,10 @@ window.staticTranslations = {
             "Eye Tracking Active": "眼动追踪已激活",
             "Navigation": "导航",
             "Look at button at the bottom to select it": "查看底部的按钮以选择它",
+            "Auto Listen": "自动监听",
+            "History": "历史记录",
+            "Clear History": "清除历史记录",
+            "Change Language": "更改语言",
             // Category Names
             "QuickWords": "常用词", "Doctor": "医生", "Medical": "医疗", "Feelings": "感觉", "Needs": "需求", "People": "人物", "Questions": "问题"
         },
@@ -181,12 +193,12 @@ window.staticTranslations = {
             Medical: [
                 { icon: '😣', text: "痛" }, { icon: '😮‍💨', text: "呼吸" }, { icon: '🤢', text: "恶心" },
                 { icon: '🤧', text: "头晕" }, { icon: '🫀', text: "胸" }, { icon: '🤕', text: "头" },
-                { icon: '💊', text: "药" }, { icon: '🩻', text: "检查" }
+                { icon: '💊', text: "药" }, 
             ],
             Needs: [
                 { icon: '🚽', text: "洗手间" }, { icon: '💧', text: "水" }, { icon: '🛏️', text: "床" },
                 { icon: '🥶', text: "冷" }, { icon: '🥵', text: "热" }, { icon: '痒', text: "痒" },
-                { icon: '👓', text: "眼镜" }, { icon: '📱', text: "手机" }
+                { icon: '👓', text: "眼镜" },
             ],
             Feelings: [
                 { icon: '😟', text: "焦虑" }, { icon: '😨', text: "害怕" }, { icon: '😠', text: "沮丧" },

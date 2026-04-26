@@ -4,7 +4,7 @@ import { NgramEngine } from './ngram-engine.js';
 let engine = null;
 
 self.onmessage = async (e) => {
-    const { action, filePath, text, limit, contextWords } = e.data;
+    const { action, filePath, text, language, limit, contextWords } = e.data;
 
     if (action === 'load') {
         engine = new NgramEngine(filePath);
@@ -14,7 +14,7 @@ self.onmessage = async (e) => {
 
     if (action === 'predict') {
         if (!engine) return;
-        const predictions = engine.getPredictions(text, limit, contextWords);
+        const predictions = await engine.getRemotePredictions(text, language || 'English', limit, contextWords);
         self.postMessage({ status: 'results', predictions });
     }
 };

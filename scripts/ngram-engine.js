@@ -3,7 +3,9 @@ export class NgramEngine {
         this.dictionaryUrl = dictionaryUrl;
         this.dictionary = {};
         this.isLoaded = false;
-    }
+        this.apiBase = "http://localhost:5000"; // Point to your Flask server
+    };
+    
 
     async load() {
         try {
@@ -68,5 +70,39 @@ export class NgramEngine {
         }
 
         return [];
+    }
+
+    async getRemotePredictions(inputText, langName, numSuggestions = 5, contextWords = []) {
+        if (!this.isLoaded) return [];
+
+        let processingText = inputText;
+
+        // 1. If not English, translate input TO English first
+        if (langName.toLowerCase() !== 'english') {
+            const toEnRes = await fetch(`${this.apiBase}/translate-bridge`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: inputText, target_lang: langName, direction: 'to_en' })
+            });
+            const { translation } = await toEnRes.json();
+            processingText = translation;
+        }
+
+        // 2. Get English predictions from local Markov Dictionary
+        // Use your existing logic (Path A & B)
+        const englishSuggestions = this.getPredictions(processingText, numSuggestions, contextWords);
+        
+        if (englishSuggestions.length === 0) return [];
+        if (langName.toLowerCase() === 'english') return englishSuggestions;
+
+        // 3. Translate predictions BACK to target language
+        const fromEnRes = await fetch(`${this.apiBase}/translate-bridge`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: englishSuggestions, target_lang: langName, direction: 'from_en' })
+        });
+        const { translations } = await fromEnRes.json();
+
+        return translations;
     }
 }
