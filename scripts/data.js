@@ -32,8 +32,7 @@ window.keyboardLayouts = {
 window.currentCategory = 'Quickwords';
 window.currentLang = window.languages[0];
 window.doctorPrompts = [
-    { icon: '🩺', text: 'Do you have chest pain?' },
-    { icon: '💊', text: 'Are you taking your medication?' },
+    
 ];
 
 // Global Transcription State

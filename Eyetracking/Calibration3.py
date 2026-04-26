@@ -14,26 +14,44 @@ class Calibration:
         self.black_screen = np.zeros(
             (self.screen_h, self.screen_w, 3), dtype=np.uint8)
 
-        # 4 Target Points: Top-Left, Top-Right, Bottom-Left, Bottom-Right
-        self.targets = [(int(screen_w * x), int(screen_h * y))
-                        for y in np.linspace(0.05, 0.95, 3) for x in np.linspace(0.05, 0.95, 3)]
+        # NEW SEQUENCE: Center, then clockwise around the edges starting Top-Left
+        self.targets = [
+            (int(screen_w * 0.5), int(screen_h * 0.5)),   # 1. Center
+            (int(screen_w * 0.05), int(screen_h * 0.05)),  # 2. Top-Left
+            (int(screen_w * 0.5), int(screen_h * 0.05)),  # 3. Top-Middle
+            (int(screen_w * 0.95), int(screen_h * 0.05)),  # 4. Top-Right
+            (int(screen_w * 0.95), int(screen_h * 0.5)),  # 5. Middle-Right
+            (int(screen_w * 0.95), int(screen_h * 0.95)),  # 6. Bottom-Right
+            (int(screen_w * 0.5), int(screen_h * 0.95)),  # 7. Bottom-Middle
+            (int(screen_w * 0.05), int(screen_h * 0.95)),  # 8. Bottom-Left
+            (int(screen_w * 0.05), int(screen_h * 0.5))   # 9. Middle-Left
+        ]
 
-        # Add center point at the beginning
-        self.targets.insert(0, (int(screen_w * 0.5), int(screen_h * 0.5)))
+        # Offset variables for our final calibration step
+        self.offset_x = 0.0
+        self.offset_y = 0.0
 
-        self.raw_features = []  # To store the 4320-length arrays
-        self.target_labels = []  # To store the (X, Y) percentages
-        self.scaler = StandardScaler()  # The ML scaler
+        self.raw_features = []
+        self.target_labels = []
+        self.scaler = StandardScaler()
 
-        # Bounding Box Limits (Now in absolute Centimeters)
+        # Bounding Box Limits
         self.min_x = 0.0
         self.max_x = 0.0
         self.min_y = 0.0
         self.max_y = 0.0
 
-        # EMA Filter State
         self.smoothed_x = None
         self.smoothed_y = None
+
+        self.kalman = cv2.KalmanFilter(4, 2)
+        self.kalman.measurementMatrix = np.array(
+            [[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
+        self.kalman.transitionMatrix = np.array(
+            [[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32)
+        self.kalman.processNoiseCov = np.eye(4, dtype=np.float32) * 0.05
+        self.kalman.measurementNoiseCov = np.eye(2, dtype=np.float32) * 1.5
+        self.kalman_initialized = False
 
     def run(self, cam, face):
         self.face = face
@@ -61,7 +79,7 @@ class Calibration:
 
             # --- Phase 2: Record ---
             record_start = time.time()
-            record_duration = 3.0
+            record_duration = 2.0
             max_radius = 30
 
             samples = []
@@ -105,13 +123,113 @@ class Calibration:
                 self.raw_samples.append(avg_pt)
                 print(
                     f"Point {idx+1} Captured! (Averaged over {valid_frames} frames)")
+            # ... (keep the rest of your run method the same until the end) ...
             else:
                 print(
                     f"Warning: Tracking lost on point {idx+1}. Appending zeros.")
                 self.raw_samples.append(np.array([0.0, 0.0, 0.0]))
 
         cv2.destroyWindow(window_name)
+
+        # 1. Train the Ridge Model first
         self._train()
+
+        # 2. Run the final big dot for Kalman tuning and Offset calculation
+        self.tune_kalman_and_offset(cam)
+
+        cv2.destroyWindow(window_name)
+        self._train()
+
+    def tune_kalman_and_offset(self, cam):
+        print("\n" + "="*50)
+        print("🎯 FINAL PHASE: Stare at the big center dot to tune filtering & offset")
+        print("="*50)
+
+        window_name = "Tuning"
+        cv2.namedWindow(window_name, cv2.WND_PROP_FULLSCREEN)
+        cv2.setWindowProperty(
+            window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+        true_center_x = self.screen_w * 0.5
+        true_center_y = self.screen_h * 0.5
+        center_target = (int(true_center_x), int(true_center_y))
+
+        predicted_x_samples = []
+        predicted_y_samples = []
+
+        # Prep phase: Show a big blue dot and let the user focus
+        prep_start = time.time()
+        canvas = np.ones((self.screen_h, self.screen_w, 3), dtype=np.uint8)
+        cv2.circle(canvas, center_target, 60, (255, 0, 0), -1)
+
+        while time.time() - prep_start < 1.0:
+            cam.read()
+            cv2.imshow(window_name, canvas)
+            cv2.waitKey(1)
+
+        # Record Phase: Collect 3 seconds of data
+        record_start = time.time()
+        record_duration = 3.0
+
+        while True:
+            elapsed = time.time() - record_start
+            if elapsed > record_duration:
+                break
+
+            frame = cam.read()
+            if frame is not None:
+                self.face.update(frame)
+                raw_features = self.face.get_eye_scalars()
+
+                if raw_features is not None:
+                    # Run the freshly trained model to get predictions
+                    raw_features_2d = raw_features.reshape(1, -1)
+                    scaled_features = self.scaler.transform(raw_features_2d)
+                    prediction = self.model.predict(scaled_features)
+
+                    percent_x, percent_y = prediction[0]
+                    pred_x = percent_x * self.screen_w
+                    pred_y = percent_y * self.screen_h
+
+                    predicted_x_samples.append(pred_x)
+                    predicted_y_samples.append(pred_y)
+
+            # Animate the dot shrinking slightly to show progress
+            canvas[:] = 1
+            current_radius = max(
+                int(60 * (1.0 - (elapsed / record_duration))), 10)
+            cv2.circle(canvas, center_target, current_radius, (255, 0, 0), -1)
+            cv2.imshow(window_name, canvas)
+            cv2.waitKey(1)
+
+        cv2.destroyWindow(window_name)
+
+        # --- Calculate Variance and Offset ---
+        if len(predicted_x_samples) > 10:
+            # 1. Kalman Tuning (Variance)
+            var_x = np.var(predicted_x_samples)
+            var_y = np.var(predicted_y_samples)
+
+            safe_var_x = np.clip(var_x, 1.0, 500.0)
+            safe_var_y = np.clip(var_y, 1.0, 500.0)
+
+            self.kalman.measurementNoiseCov = np.array([
+                [safe_var_x, 0],
+                [0, safe_var_y]
+            ], dtype=np.float32)
+
+            # 2. Hard Offset Calculation (Mean Error)
+            # mean_pred_x = np.mean(predicted_x_samples)
+            # mean_pred_y = np.mean(predicted_y_samples)
+
+            # self.offset_x = true_center_x - mean_pred_x
+            # self.offset_y = true_center_y - mean_pred_y
+
+            print(f"✅ Kalman Tuned! Var X: {var_x:.1f}, Var Y: {var_y:.1f}")
+            print(
+                f"✅ Offset Applied! X: {self.offset_x:+.1f}px, Y: {self.offset_y:+.1f}px")
+        else:
+            print("⚠️ Not enough data collected during tuning. Using defaults.")
 
     def _train(self):
         print("\nTraining Gaze Regression Model...")
@@ -136,42 +254,38 @@ class Calibration:
         if not self.is_calibrated:
             return None
 
-        # 1. Get the raw live pixel array from the camera frame
-        # (Assuming you are passing the 'frame' into this function or grabbing it)
         raw_features = self.face.get_eye_scalars()
-
         if raw_features is None:
             return None
 
-        # 2. Reshape the 1D array into a 2D matrix (1 row, 4320 columns)
-        # scikit-learn STRICTLY requires 2D arrays for predictions
         raw_features_2d = raw_features.reshape(1, -1)
-
-        # 3. Apply the Transform! (Squish 0-255 down to -3 to 3)
-        # DO NOT use fit_transform here, only transform() to use the saved weights
         scaled_features = self.scaler.transform(raw_features_2d)
-
-        # 4. Predict the Screen Percentages
         prediction = self.model.predict(scaled_features)
-
-        # prediction is a 2D array like [[0.45, 0.60]], extract the values
         percent_x, percent_y = prediction[0]
 
-        # 5. Scale to actual monitor pixels
-        raw_screen_x = percent_x * self.screen_w
-        raw_screen_y = percent_y * self.screen_h
+        # 5. Scale to monitor pixels AND APPLY THE HARD OFFSET
+        raw_screen_x = np.float32((percent_x * self.screen_w) + self.offset_x)
+        raw_screen_y = np.float32((percent_y * self.screen_h) + self.offset_y)
 
-        # 6. Apply EMA Filter to kill the noise
-        alpha = 0.15
+        # 6. Apply Kalman Filter
+        # FIXED: Added dtype=np.float32 to prevent the gemm crash
+        measured = np.array([[raw_screen_x], [raw_screen_y]], dtype=np.float32)
 
-        if self.smoothed_x is None:
-            self.smoothed_x = raw_screen_x
-            self.smoothed_y = raw_screen_y
-        else:
-            self.smoothed_x = (alpha * raw_screen_x) + \
-                ((1.0 - alpha) * self.smoothed_x)
-            self.smoothed_y = (alpha * raw_screen_y) + \
-                ((1.0 - alpha) * self.smoothed_y)
+        if not self.kalman_initialized:
+            self.kalman.statePre = np.array(
+                [[raw_screen_x], [raw_screen_y], [0], [0]], dtype=np.float32)
+            self.kalman.statePost = np.array(
+                [[raw_screen_x], [raw_screen_y], [0], [0]], dtype=np.float32)
+            self.kalman_initialized = True
+
+        # Phase A: Correct the state with the actual noisy measurement
+        self.kalman.correct(measured)
+
+        # Phase B: Predict the *next* smoothed position based on position + velocity
+        predicted = self.kalman.predict()
+
+        self.smoothed_x = predicted[0][0]
+        self.smoothed_y = predicted[1][0]
 
         # 7. Clamp to screen bounds
         final_x = max(0, min(self.screen_w, int(self.smoothed_x)))
