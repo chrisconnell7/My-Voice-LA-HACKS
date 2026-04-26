@@ -176,7 +176,7 @@ class OpenCVFeatureExtractor {
     let cx = (minX + maxX) / 2;
     let cy = (minY + maxY) / 2;
 
-    let currentW = (maxX - minX) * 1; // kadon this was 1.2
+    let currentW = (maxX - minX) * 1.2; // kadon this was 1.2
     let currentH = (maxY - minY) * 1.2;
 
     let targetRatio = 60 / 36;
