@@ -57,12 +57,14 @@ class Face:
         self.left_iris_3d = None
         self.left_eyeball_3d = None
         self.left_graze_ray = None
+        self.left_eye_crop = np.zeros((36, 60, 3), dtype=np.uint8)
 
         self.right_iris_radius = None
         self.right_iris_px = None
         self.right_iris_3d = None
         self.right_eyeball_3d = None
         self.right_graze_ray = None
+        self.right_eye_crop = np.zeros((36, 60, 3), dtype=np.uint8)
 
         self.iris_radius_px = None
         self.mm_per_pixel = None
@@ -90,81 +92,92 @@ class Face:
 
         self._update_eyeballs()
         self._update_irises()
+        self._get_eye_cutouts(bgr_image)
         # print(self.left_iris_3d, self.right_iris_3d)
         self.left_graze_ray = self.left_iris_3d - self.left_eyeball_3d
         self.right_graze_ray = self.right_iris_3d - self.right_eyeball_3d
 
-        # print(self.iris_radius_px)
-        # update scaling factor based on pixel resolution of iris radius
-        # look at both irises and use the larger one (greater pixel density) to calculate the scaling factor
+    def _get_eye_cutouts(self, frame, target_w=60, target_h=36):
+        """
+        Extracts and resizes the left and right eyes.
+        Returns two 60x36 COLOR (BGR) numpy arrays.
+        """
+        if not self.detection_result or not self.detection_result.face_landmarks:
+            return np.zeros((target_h, target_w, 3), np.uint8), np.zeros((target_h, target_w, 3), np.uint8)
 
-        # if self.detection_result and self.detection_result.face_landmarks:
-        #     print("=" * 60)
-        #     print("👁️ GAZE VECTOR DIAGNOSTICS")
-        #     print("-" * 60)
+        landmarks = self.detection_result.face_landmarks[0]
+        h, w = frame.shape[:2]
 
-        #     # Left Eye Math (Assuming camera's right side)
-        #     left_vec = self.left_iris_3d - self.left_eyeball_3d
-        #     print("LEFT EYE:")
-        #     print(
-        #         f"  Center: X:{self.left_eyeball_3d[0]:7.2f}, Y:{self.left_eyeball_3d[1]:7.2f}, Z:{self.left_eyeball_3d[2]:7.2f}")
-        #     print(
-        #         f"  Pupil:  X:{self.left_iris_3d[0]:7.2f}, Y:{self.left_iris_3d[1]:7.2f}, Z:{self.left_iris_3d[2]:7.2f}")
-        #     print(
-        #         f"  Vector: X:{left_vec[0]:7.2f}, Y:{left_vec[1]:7.2f}, Z:{left_vec[2]:7.2f} (Points {'RIGHT' if left_vec[0] > 0 else 'LEFT'})")
+        def get_processed_crop(indices):
+            # 1. Get raw pixel coordinates for all eyelid points
+            pts_x = [int(landmarks[i].x * w) for i in indices]
+            pts_y = [int(landmarks[i].y * h) for i in indices]
 
-        #     # Right Eye Math (Assuming camera's left side)
-        #     right_vec = self.right_iris_3d - self.right_eyeball_3d
-        #     print("\nRIGHT EYE:")
-        #     print(
-        #         f"  Center: X:{self.right_eyeball_3d[0]:7.2f}, Y:{self.right_eyeball_3d[1]:7.2f}, Z:{self.right_eyeball_3d[2]:7.2f}")
-        #     print(
-        #         f"  Pupil:  X:{self.right_iris_3d[0]:7.2f}, Y:{self.right_iris_3d[1]:7.2f}, Z:{self.right_iris_3d[2]:7.2f}")
-        #     print(
-        #         f"  Vector: X:{right_vec[0]:7.2f}, Y:{right_vec[1]:7.2f}, Z:{right_vec[2]:7.2f} (Points {'RIGHT' if right_vec[0] > 0 else 'LEFT'})")
+            # 2. Find the tight bounding box and center
+            min_x, max_x = min(pts_x), max(pts_x)
+            min_y, max_y = min(pts_y), max(pts_y)
 
-        #     print("-" * 60)
+            cx = (min_x + max_x) // 2
+            cy = (min_y + max_y) // 2
 
-        #     # The Ultimate Divergence Test
-        #     # Calculate distance between centers vs distance between irises (ignoring Z depth)
-        #     ied = np.linalg.norm(
-        #         self.left_eyeball_3d[:2] - self.right_eyeball_3d[:2])
-        #     ipd = np.linalg.norm(
-        #         self.left_iris_3d[:2] - self.right_iris_3d[:2])
+            # 3. Calculate current dimensions and add a 20% padding
+            current_w = (max_x - min_x) * 1.2
+            current_h = (max_y - min_y) * 1.2
 
-        #     print(f"Distance between Eyeball Centers (IED): {ied:5.2f} cm")
-        #     print(f"Distance between Pupils (IPD):          {ipd:5.2f} cm")
+            # 4. Force a strict 5:3 (Target Width / Target Height) aspect ratio
+            target_ratio = target_w / target_h
 
-        #     if ipd > ied:
-        #         print(
-        #             ">> DIAGNOSIS: DIVERGING (Walleye). Pupils are physically wider apart than centers.")
-        #     else:
-        #         print(
-        #             ">> DIAGNOSIS: CONVERGING (Cross-eyed). Pupils are closer together than centers.")
-        #     print("=" * 60)
+            if current_w / current_h > target_ratio:
+                current_h = current_w / target_ratio
+            else:
+                current_w = current_h * target_ratio
 
-    # def _update_eyeballs(self):
-    #     # update eye centers and iris positions in 3D
-    #     inner_corner = self.get_xyz(LEFT_INNER)
-    #     outer_corner = self.get_xyz(LEFT_OUTER)
-    #     socket_midpoint = (inner_corner + outer_corner) / 2.0
-    #     socket_midpoint[2] -= EYEBALL_RADIUS_CM
-    #     self.left_eyeball_3d = socket_midpoint
+            # 5. Calculate new borders from the center
+            start_x = int(cx - current_w / 2)
+            end_x = int(cx + current_w / 2)
+            start_y = int(cy - current_h / 2)
+            end_y = int(cy + current_h / 2)
 
-    #     inner_corner = self.get_xyz(RIGHT_INNER)
-    #     outer_corner = self.get_xyz(RIGHT_OUTER)
-    #     socket_midpoint = (inner_corner + outer_corner) / 2.0
-    #     socket_midpoint[2] -= EYEBALL_RADIUS_CM
-    #     self.right_eyeball_3d = socket_midpoint
+            # 6. Clamp to physical image boundaries
+            start_x, end_x = max(0, start_x), min(w, end_x)
+            start_y, end_y = max(0, start_y), min(h, end_y)
 
-    #     # calculate offset for eyeball
-    #     # eyeball_unidirectional_offset = (abs(self.left_iris_3d[0] - self.right_iris_3d[0]) - abs(
-    #     # self.left_eyeball_3d[0] - self.right_eyeball_3d[0])) / 2
-    #     # print(eyeball_unidirectional_offset)
+            # 7. Slice the image
+            crop = frame[start_y:end_y, start_x:end_x]
 
-    #     fixed_eyeball_offset = 0.20  # 1.5-2.5mm
-    #     self.left_eyeball_3d[0] -= fixed_eyeball_offset
-    #     self.right_eyeball_3d[0] += fixed_eyeball_offset
+            if crop.size == 0:
+                return None
+
+            # 8. Resize (Still in Color)
+            resized = cv2.resize(crop, (target_w, target_h),
+                                 interpolation=cv2.INTER_AREA)
+
+            return resized
+
+        self.left_eye_crop = get_processed_crop(LEFT_EYELID_INDICIES)
+        self.right_eye_crop = get_processed_crop(RIGHT_EYELID_INDICIES)
+
+    def get_eye_scalars(self):
+        # Safety check in case the eyes weren't detected
+        if self.left_eye_crop is None or self.right_eye_crop is None:
+            return None
+
+        # 1. Convert to Grayscale
+        left_gray = cv2.cvtColor(self.left_eye_crop, cv2.COLOR_BGR2GRAY)
+        right_gray = cv2.cvtColor(self.right_eye_crop, cv2.COLOR_BGR2GRAY)
+
+        # 2. Equalize Histogram (Crucial for Ridge Regression)
+        left_eq = cv2.equalizeHist(left_gray)
+        right_eq = cv2.equalizeHist(right_gray)
+
+        # 3. Flatten into 1D arrays
+        left_eye_flat = left_eq.flatten()
+        right_eye_flat = right_eq.flatten()
+
+        # 4. Concatenate into a single feature vector
+        fused = np.concatenate([left_eye_flat, right_eye_flat])
+
+        return fused
 
     def _update_eyeballs(self):
         # 1. Extract the Head's 3x3 Rotation Matrix

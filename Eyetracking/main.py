@@ -5,7 +5,7 @@ import numpy as np
 import tkinter as tk
 
 from Face import Face
-from Calibration2 import Calibration
+from Calibration3 import Calibration
 
 
 class CameraStream:
@@ -72,6 +72,8 @@ if __name__ == "__main__":
         output_rgb = face.draw_eyeballs_3d(output_rgb)
 
         frame = face.draw_iris_contours(frame)
+        left_crop, right_crop = face.left_eye_crop, face.right_eye_crop
+
         # frame = face.draw_head_pose_axes(frame)
         # frame = face.draw_landmark_mesh(frame)
         # frame = face.draw_view_rays(frame)
@@ -80,8 +82,9 @@ if __name__ == "__main__":
         output_bgr = cv2.cvtColor(output_rgb, cv2.COLOR_RGB2BGR)
 
         combined_frame = np.concatenate((frame, output_bgr), axis=1)
-
+        eyes_concat = np.concatenate((left_crop, right_crop), axis=1)
         cv2.imshow("screen", combined_frame)
+        cv2.imshow("eyes", eyes_concat)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
