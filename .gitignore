@@ -1,6 +1,21 @@
-data/medical_qa.csv
-.env
-data/markov_dictionary.json
-Eyetracking/__pycache__/
-.vscode/
+# --- Python Specific ---
 venv/
+__pycache__/
+Eyetracking/__pycache__/
+*.pyc
+
+# --- Data and Large Files ---
+data/medical_qa.csv
+data/markov_dictionary.json
+Eyetracking/models/*.task
+
+# --- Environment and Secret Keys ---
+.env
+
+# --- IDE Specific ---
+.vscode/
+.idea/
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db
