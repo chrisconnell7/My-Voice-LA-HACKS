@@ -1085,3 +1085,34 @@ body {
 .keyboard-outer-wrapper {
     padding: 12px !important; /* Reduced from 18px */
 }
+
+/* The Virtual Cursor */
+#gazeCursor {
+    position: fixed;
+    width: 30px;
+    height: 30px;
+    background-color: rgba(74, 144, 226, 0.5); /* Semi-transparent blue */
+    border: 3px solid #4a90e2;
+    border-radius: 50%;
+    pointer-events: none; /* VERY IMPORTANT: lets JavaScript 'see' through it */
+    z-index: 9999;
+    transform: translate(-50%, -50%); /* Centers the div on the exact X,Y coordinate */
+    transition: left 0.1s ease-out, top 0.1s ease-out; /* Smooths out the jitter */
+}
+
+/* Calibration Overlay */
+#calibrationOverlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(255, 255, 255, 0.95);
+    z-index: 10000;
+}
+
+#calibrationDot {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: red;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}

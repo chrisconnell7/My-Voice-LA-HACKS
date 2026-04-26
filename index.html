@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Voice - AAC Application</title>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script> -->
+    <script type="importmap">
+      {
+        "imports": {
+          "ml-preprocessing": "https://cdn.skypack.dev/ml-preprocessing",
+          "@mediapipe/tasks-vision": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3"
+        }
+      }
+    </script>
+    <script async src="https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.8.0-release.1/dist/opencv.js"></script>
     <link rel="stylesheet" href="/styles/styles.css">
 </head>
 <body>
@@ -14,10 +25,10 @@
             <div class="hamburger" onclick="toggleMenu()">☰</div>
             <div class="title ui-text" data-en = "My Voice">My Voice</div>
         </div>
-        <div class="status-badge">
-            <div class="status-dot"></div>
-            <span class="ui-text" data-en="Eye Tracking Active">Eye Tracking Active</span>
-        </div>
+        <button class="icon-btn" id="calibrateBtn" onclick="startEyeTrackingFlow()" style="display: flex; align-items: center; gap: 8px;">
+            <div class="status-dot" id="trackerStatusDot" style="width: 10px; height: 10px; border-radius: 50%; background: #dc3545; box-shadow: 0 0 6px rgba(220, 53, 69, 0.6); transition: all 0.3s ease;"></div>
+            <span class="ui-text" id="calibrateText" data-en="Calibrate">Calibrate</span>
+        </button>
         <div class="header-right">
             <button class="icon-btn keyboard-toggle-btn" id="keyboardToggleBtn" onclick="toggleKeyboard()">
                 <span>⌨️</span>
@@ -273,10 +284,13 @@
     </div>
 </div>
 
+<div id="gazeCursor" style="display: none;"></div>
+
 <script src="./scripts/data.js"></script>
 <script src="./scripts/doctor.js"></script>
 <script src="./scripts/keyboard.js"></script>
 <script src="./scripts/audio.js"></script>
+<script type="module" src="./scripts/eyetracker.js"></script>
 <script type="module" src="./scripts/main.js"></script>
 
 </body>

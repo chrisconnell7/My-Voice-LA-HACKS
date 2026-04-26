@@ -210,7 +210,7 @@ function updateDwell() {
     // Force snap to zero and hide if progress is gone
     if (!isHovering && dwellProgress < 1) {
         dwellProgress = 0;
-        if (ringContainer) ringContainer.style.opacity = "0";
+        if (ringContainer) ringContainer.style.opacity = "0.4"; // Leaves a visible empty ring!
     } else if (ringContainer && !dwellLockout) {
         ringContainer.style.opacity = "1";
     }
@@ -524,3 +524,57 @@ document.addEventListener('DOMContentLoaded', () => {
         filePath: '../data/markov_dictionary.json' 
     });
 });
+
+window.startEyeTrackingFlow = () => {
+    const btnText = document.getElementById('calibrateText');
+    const statusDot = document.getElementById('trackerStatusDot');
+    
+    // Dim the ring during calibration so it's out of the way
+    const ring = document.getElementById('dwell-cursor');
+    if (ring) ring.style.opacity = '0';
+
+    btnText.textContent = "Calibrating...";
+    statusDot.style.background = '#ffc107'; 
+    statusDot.style.boxShadow = '0 0 6px rgba(255, 193, 7, 0.6)';
+
+    initEyeTracker({
+        onCalibrationComplete: () => {
+            // Bring the ring back
+            if (ring) ring.style.opacity = '0.4';
+
+            statusDot.style.background = '#28a745';
+            statusDot.style.boxShadow = '0 0 6px rgba(40, 167, 69, 0.6)';
+            btnText.textContent = "Calibrated"; 
+        },
+        onGazeUpdate: (x, y) => {
+            moveVirtualCursor(x, y);
+        }
+    });
+};
+
+function moveVirtualCursor(x, y) {
+    // 1. Move the SVG ring instantly (Hardware Accelerated = ZERO LAG)
+    const ring = document.getElementById('dwell-cursor');
+    if (ring) {
+        ring.style.transform = `translate(${x - 20}px, ${y - 20}px)`;
+    }
+
+    // 2. See what the eyes are looking at
+    const elementUnderGaze = document.elementFromPoint(x, y);
+    const targetButton = elementUnderGaze ? elementUnderGaze.closest('button, .ai-chip, .suggestion-btn, .category-btn, .key, .action-btn') : null;
+    
+    // 3. Feed it directly to your existing Momentum Engine
+    if (targetButton) {
+        if (targetButton !== currentTarget) {
+            isHovering = true;
+            currentTarget = targetButton;
+            dwellLockout = false;
+            
+            // Trigger the beautiful ring animation!
+            if (!animationFrame) animationFrame = requestAnimationFrame(updateDwell);
+        }
+    } else {
+        // Looking at empty space, let the ring drain
+        isHovering = false;
+    }
+}

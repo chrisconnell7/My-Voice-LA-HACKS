@@ -236,7 +236,9 @@ class OpenCVFeatureExtractor {
 // --- MAIN APP COMPONENT ---
 
 class EyeTrackerCalibration {
-  constructor() {
+  constructor(callbacks = {}) {
+    this.callbacks = callbacks;
+    this.isFinished = false;
     this.initUI();
 
     this.video = document.createElement("video");
@@ -314,8 +316,8 @@ class EyeTrackerCalibration {
       // CRITICAL FIX: Request native resolution by passing high "ideal" values
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: { ideal: 4096 },
-          height: { ideal: 2160 },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
           facingMode: "user",
         },
       });
@@ -346,13 +348,17 @@ class EyeTrackerCalibration {
   initUI() {
     this.canvas = document.createElement("canvas");
     this.ctx = this.canvas.getContext("2d");
+    
+    // Make it a full-screen overlay that sits on top of the dashboard
+    this.canvas.style.position = "fixed";
+    this.canvas.style.top = "0";
+    this.canvas.style.left = "0";
+    this.canvas.style.zIndex = "9999"; 
+    this.canvas.style.display = "block";
+    
     document.body.appendChild(this.canvas);
     this.resize();
     window.addEventListener("resize", () => this.resize());
-    document.body.style.margin = "0";
-    document.body.style.overflow = "hidden";
-    document.body.style.backgroundColor = "white";
-    this.canvas.style.display = "block";
   }
 
   resize() {
@@ -385,8 +391,9 @@ class EyeTrackerCalibration {
       if (results.faceLandmarks.length > 0)
         landmarks = results.faceLandmarks[0];
     }
-
-    this.ctx.fillStyle = "white";
+    
+    // Using rgba for 90% opacity white so the dashboard softly shows through
+    this.ctx.fillStyle = "rgba(255, 255, 255, 0.9)"; 
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     if (this.state === "INSTRUCT") {
@@ -540,19 +547,18 @@ class EyeTrackerCalibration {
         const clampedX = Math.max(0, Math.min(this.canvas.width, smoothX));
         const clampedY = Math.max(0, Math.min(this.canvas.height, smoothY));
 
-        this.ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        if (!this.isFinished) {
+            this.canvas.style.display = "none";
+            this.isFinished = true;
+            if (this.callbacks.onCalibrationComplete) {
+                this.callbacks.onCalibrationComplete();
+            }
+        }
 
-        this.ctx.strokeStyle = "white";
-        this.ctx.lineWidth = 4;
-        this.ctx.beginPath();
-        this.ctx.arc(clampedX, clampedY, 30, 0, Math.PI * 2);
-        this.ctx.stroke();
-
-        this.ctx.fillStyle = "white";
-        this.ctx.font = "24px Arial";
-        this.ctx.textAlign = "left";
-        this.ctx.fillText(`✅ Calibration Complete. Move your eyes.`, 30, 40);
+        // 2. Continuously send coordinates to main.js for the virtual cursor
+        if (this.callbacks.onGazeUpdate) {
+            this.callbacks.onGazeUpdate(clampedX, clampedY);
+        }
       }
     }
 
@@ -618,8 +624,8 @@ class EyeTrackerCalibration {
   }
 }
 
-// Start the app automatically once the module loads
-window.onload = () => {
+// Bridge function to allow main.js to trigger calibration
+window.initEyeTracker = (callbacks) => {
   console.log("🚀 Starting Eye Tracker Calibration...");
-  new EyeTrackerCalibration();
+  new EyeTrackerCalibration(callbacks);
 };
