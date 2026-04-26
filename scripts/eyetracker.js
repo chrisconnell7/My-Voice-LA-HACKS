@@ -176,7 +176,7 @@ class OpenCVFeatureExtractor {
     let cx = (minX + maxX) / 2;
     let cy = (minY + maxY) / 2;
 
-    let currentW = (maxX - minX) * 1.2;
+    let currentW = (maxX - minX) * 1; // kadon this was 1.2
     let currentH = (maxY - minY) * 1.2;
 
     let targetRatio = 60 / 36;
@@ -348,14 +348,14 @@ class EyeTrackerCalibration {
   initUI() {
     this.canvas = document.createElement("canvas");
     this.ctx = this.canvas.getContext("2d");
-    
+
     // Make it a full-screen overlay that sits on top of the dashboard
     this.canvas.style.position = "fixed";
     this.canvas.style.top = "0";
     this.canvas.style.left = "0";
-    this.canvas.style.zIndex = "9999"; 
+    this.canvas.style.zIndex = "9999";
     this.canvas.style.display = "block";
-    
+
     document.body.appendChild(this.canvas);
     this.resize();
     window.addEventListener("resize", () => this.resize());
@@ -391,9 +391,9 @@ class EyeTrackerCalibration {
       if (results.faceLandmarks.length > 0)
         landmarks = results.faceLandmarks[0];
     }
-    
+
     // Using rgba for 90% opacity white so the dashboard softly shows through
-    this.ctx.fillStyle = "rgba(255, 255, 255, 0.9)"; 
+    this.ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     if (this.state === "INSTRUCT") {
@@ -548,16 +548,16 @@ class EyeTrackerCalibration {
         const clampedY = Math.max(0, Math.min(this.canvas.height, smoothY));
 
         if (!this.isFinished) {
-            this.canvas.style.display = "none";
-            this.isFinished = true;
-            if (this.callbacks.onCalibrationComplete) {
-                this.callbacks.onCalibrationComplete();
-            }
+          this.canvas.style.display = "none";
+          this.isFinished = true;
+          if (this.callbacks.onCalibrationComplete) {
+            this.callbacks.onCalibrationComplete();
+          }
         }
 
         // 2. Continuously send coordinates to main.js for the virtual cursor
         if (this.callbacks.onGazeUpdate) {
-            this.callbacks.onGazeUpdate(clampedX, clampedY);
+          this.callbacks.onGazeUpdate(clampedX, clampedY);
         }
       }
     }

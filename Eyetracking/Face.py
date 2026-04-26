@@ -121,7 +121,7 @@ class Face:
             cy = (min_y + max_y) // 2
 
             # 3. Calculate current dimensions and add a 20% padding
-            current_w = (max_x - min_x) * 1.2
+            current_w = (max_x - min_x) * 1
             current_h = (max_y - min_y) * 1.2
 
             # 4. Force a strict 5:3 (Target Width / Target Height) aspect ratio

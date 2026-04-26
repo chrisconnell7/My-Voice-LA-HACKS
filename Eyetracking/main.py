@@ -11,9 +11,10 @@ from Calibration3 import Calibration
 import pyautogui
 
 # Set this to True to prevent pyautogui from pausing between movements
-pyautogui.PAUSE = 0 
+pyautogui.PAUSE = 0
 # Failsafe: moving the physical mouse to the corner of the screen aborts the script
 pyautogui.FAILSAFE = True
+
 
 class CameraStream:
     def __init__(self, port=0):
@@ -87,14 +88,14 @@ if __name__ == "__main__":
         output_rgb = face.draw_eyeballs_3d(output_rgb)
 
         frame = face.draw_iris_contours(frame)
-        
+
         # NOTE: Ensure face.left_eye_crop and right_eye_crop exist in your Face.py!
         try:
             left_crop, right_crop = face.left_eye_crop, face.right_eye_crop
             eyes_concat = np.concatenate((left_crop, right_crop), axis=1)
             cv2.imshow("eyes", eyes_concat)
         except AttributeError:
-            pass # Fails gracefully if the crops aren't implemented yet
+            pass  # Fails gracefully if the crops aren't implemented yet
 
         # Convert back to BGR for OpenCV display
         output_bgr = cv2.cvtColor(output_rgb, cv2.COLOR_RGB2BGR)
@@ -113,14 +114,14 @@ if __name__ == "__main__":
         # Only process mouse movement and display the cursor window IF calibrated
         if calibrator.is_calibrated:
             vision_output = calibrator.show_vision_circle()
-            
-            # Note: Calibration3 show_vision_circle returns a fresh black screen. 
+
+            # Note: Calibration3 show_vision_circle returns a fresh black screen.
             # If you want the mesh/rays drawn on it, these need to be implemented in Face.py
             try:
                 vision_output = face.draw_landmark_mesh(vision_output)
                 vision_output = face.draw_view_rays(vision_output)
             except Exception as e:
-                pass 
+                pass
 
             # --- OS MOUSE CONTROL FOR CALIBRATION 3 (RIDGE REGRESSION) ---
             coords = calibrator.get_screen_pixel()
