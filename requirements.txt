@@ -8,9 +8,18 @@ google-genai
 faster-whisper
 werkzeug
 
+### For Eye tracking
+pyautogui
+mediapipe==0.10.14
+opencv-python
+numpy
+matplotlib
+scipy
 
 ### Specifically for audio processing
 transformers
 accelerate
 librosa 
 soundfile
+
+### For the Eyetracking

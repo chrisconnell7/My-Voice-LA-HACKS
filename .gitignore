@@ -1,4 +1,6 @@
 data/medical_qa.csv
 .env
 data/markov_dictionary.json
-Eyetracking
+Eyetracking/__pycache__/
+.vscode/
+venv/

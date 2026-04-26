@@ -1,3 +1,4 @@
 {
-    "livePreview.autoRefreshPreview": "Never"
+    "livePreview.autoRefreshPreview": "Never",
+    "python-envs.defaultEnvManager": "ms-python.python:system"
 }
