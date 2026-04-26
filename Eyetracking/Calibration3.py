@@ -16,7 +16,7 @@ class Calibration:
 
         # 4 Target Points: Top-Left, Top-Right, Bottom-Left, Bottom-Right
         self.targets = [(int(screen_w * x), int(screen_h * y))
-                        for y in np.linspace(0.05, 0.95, 3) for x in np.linspace(0.05, 0.95, 3)]
+                        for y in np.linspace(0.05, 0.95, 4) for x in np.linspace(0.05, 0.95, 4)]
 
         # Add center point at the beginning
         self.targets.insert(0, (int(screen_w * 0.5), int(screen_h * 0.5)))
@@ -34,6 +34,26 @@ class Calibration:
         # EMA Filter State
         self.smoothed_x = None
         self.smoothed_y = None
+
+        self.kalman = cv2.KalmanFilter(4, 2)
+
+        # Measurement matrix (We only measure x and y)
+        self.kalman.measurementMatrix = np.array([[1, 0, 0, 0],
+                                                  [0, 1, 0, 0]], np.float32)
+
+        # Transition matrix (How state evolves: x = x + dx*dt, y = y + dy*dt)
+        self.kalman.transitionMatrix = np.array([[1, 0, 1, 0],
+                                                 [0, 1, 0, 1],
+                                                 [0, 0, 1, 0],
+                                                 [0, 0, 0, 1]], np.float32)
+
+        # Process Noise: How much we trust the model's prediction (lower = smoother)
+        self.kalman.processNoiseCov = np.eye(4, dtype=np.float32) * 0.05
+
+        # Measurement Noise: How much we trust the raw Ridge output (higher = ignores more noise)
+        self.kalman.measurementNoiseCov = np.eye(2, dtype=np.float32) * 1.5
+
+        self.kalman_initialized = False
 
     def run(self, cam, face):
         self.face = face
@@ -61,7 +81,7 @@ class Calibration:
 
             # --- Phase 2: Record ---
             record_start = time.time()
-            record_duration = 3.0
+            record_duration = 2.0
             max_radius = 30
 
             samples = []
@@ -136,42 +156,38 @@ class Calibration:
         if not self.is_calibrated:
             return None
 
-        # 1. Get the raw live pixel array from the camera frame
-        # (Assuming you are passing the 'frame' into this function or grabbing it)
         raw_features = self.face.get_eye_scalars()
-
         if raw_features is None:
             return None
 
-        # 2. Reshape the 1D array into a 2D matrix (1 row, 4320 columns)
-        # scikit-learn STRICTLY requires 2D arrays for predictions
         raw_features_2d = raw_features.reshape(1, -1)
-
-        # 3. Apply the Transform! (Squish 0-255 down to -3 to 3)
-        # DO NOT use fit_transform here, only transform() to use the saved weights
         scaled_features = self.scaler.transform(raw_features_2d)
-
-        # 4. Predict the Screen Percentages
         prediction = self.model.predict(scaled_features)
-
-        # prediction is a 2D array like [[0.45, 0.60]], extract the values
         percent_x, percent_y = prediction[0]
 
-        # 5. Scale to actual monitor pixels
-        raw_screen_x = percent_x * self.screen_w
-        raw_screen_y = percent_y * self.screen_h
+        # 5. Scale to actual monitor pixels (Raw Noisy Measurement)
+        raw_screen_x = np.float32(percent_x * self.screen_w)
+        raw_screen_y = np.float32(percent_y * self.screen_h)
 
-        # 6. Apply EMA Filter to kill the noise
-        alpha = 0.15
+        # 6. Apply Kalman Filter
+        measured = np.array([[raw_screen_x], [raw_screen_y]])
 
-        if self.smoothed_x is None:
-            self.smoothed_x = raw_screen_x
-            self.smoothed_y = raw_screen_y
-        else:
-            self.smoothed_x = (alpha * raw_screen_x) + \
-                ((1.0 - alpha) * self.smoothed_x)
-            self.smoothed_y = (alpha * raw_screen_y) + \
-                ((1.0 - alpha) * self.smoothed_y)
+        if not self.kalman_initialized:
+            # FIX: Explicitly set dtype to np.float32 here as well
+            self.kalman.statePre = np.array(
+                [[raw_screen_x], [raw_screen_y], [0], [0]], dtype=np.float32)
+            self.kalman.statePost = np.array(
+                [[raw_screen_x], [raw_screen_y], [0], [0]], dtype=np.float32)
+            self.kalman_initialized = True
+
+        # Phase A: Correct the state with the actual noisy measurement
+        self.kalman.correct(measured)
+
+        # Phase B: Predict the *next* smoothed position based on position + velocity
+        predicted = self.kalman.predict()
+
+        self.smoothed_x = predicted[0][0]
+        self.smoothed_y = predicted[1][0]
 
         # 7. Clamp to screen bounds
         final_x = max(0, min(self.screen_w, int(self.smoothed_x)))
