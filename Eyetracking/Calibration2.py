@@ -145,18 +145,20 @@ class Calibration:
         # 4. Apply EMA Filter to kill the noise
         alpha = 0.15
 
-        if self.smoothed_x is None:
-            self.smoothed_x = raw_screen_x
-            self.smoothed_y = raw_screen_y
-        else:
-            self.smoothed_x = (alpha * raw_screen_x) + \
-                ((1.0 - alpha) * self.smoothed_x)
-            self.smoothed_y = (alpha * raw_screen_y) + \
-                ((1.0 - alpha) * self.smoothed_y)
+        # if self.smoothed_x is None:
+        #     self.smoothed_x = raw_screen_x
+        #     self.smoothed_y = raw_screen_y
+        # else:
+        #     self.smoothed_x = (alpha * raw_screen_x) + \
+        #         ((1.0 - alpha) * self.smoothed_x)
+        #     self.smoothed_y = (alpha * raw_screen_y) + \
+        #         ((1.0 - alpha) * self.smoothed_y)
 
+        smoothed_x = raw_screen_x * percent_x
+        smoothed_y = raw_screen_y * percent_y
         # 5. Clamp to screen bounds to prevent the cursor from leaving the monitor
-        final_x = max(0, min(self.screen_w, int(self.smoothed_x)))
-        final_y = max(0, min(self.screen_h, int(self.smoothed_y)))
+        final_x = max(0, min(self.screen_w, int(smoothed_x)))
+        final_y = max(0, min(self.screen_h, int(smoothed_y)))
 
         return (final_x, final_y)
 

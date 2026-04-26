@@ -14,7 +14,7 @@ class Calibration:
 
         # 9 Target Points (Inset by 10% from the edges)
         self.targets = [(int(screen_w * x), int(screen_h * y))
-                        for y in np.linspace(0.05, 0.96, 4) for x in np.linspace(0.05, 0.96, 4)]
+                        for y in np.linspace(0.05, 0.96, 50) for x in np.linspace(0.05, 0.96, 30)]
 
         self.raw_samples = []
         self.coeffs_x = None
@@ -40,7 +40,7 @@ class Calibration:
         for idx, target in enumerate(self.targets):
             # --- Phase 1: Prep (Give the user time to move their eyes to the dot) ---
             prep_start = time.time()
-            prep_duration = 0.5
+            # prep_duration = 0.5
 
             while time.time() - prep_start < prep_duration:
                 cam.read()  # Keep flushing the buffer
