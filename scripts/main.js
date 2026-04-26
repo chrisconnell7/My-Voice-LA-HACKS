@@ -449,8 +449,9 @@ window.renderSuggestions = () => {
         grid.innerHTML = '<div style="padding: 20px; color: #666;">No phrases found here.</div>';
         return;
     }
+    
 
-    const phrases = window.categoryData[window.currentCategory];
+    const phrases = window.categoryData[window.currentCategory].slice(0, 7);
     
     // Build the buttons (boxes) using data-text to perfectly protect against apostrophes
     grid.innerHTML = phrases.map(phrase => {

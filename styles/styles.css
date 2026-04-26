@@ -134,7 +134,7 @@ body {
 .message-box {
     padding: 10px 15px;
     height: 70px;
-    width: calc(100% - 220px);;   /* leave room for the 3 buttons on the right */
+    width: 100%; /* CHANGED from calc(100% - 220px) since it no longer shares the row */
     overflow-y: auto;
     background: white;
     border: 2px solid #e0e7ff;
@@ -142,7 +142,7 @@ body {
     display: flex;
     align-items: flex-start;
     flex-shrink: 0;
-}
+}   
 
 #messageText {
     /* Visuals - Adjusted to fit inside 100px box */
@@ -270,7 +270,7 @@ body {
 
 /* ── KEYBOARD ── */
 .keyboard-section {
-    margin-bottom: 30px;
+    margin-bottom: 0px;
     overflow: hidden;
     max-height: 0;
     transition: max-height 0.4s ease, opacity 0.3s ease, margin 0.3s ease;
@@ -278,6 +278,7 @@ body {
 }
 .keyboard-section.open {
     max-height: 680px;
+    margin-bottom: 30px; /* NEW: Added here instead */
     opacity: 1;
 }
 
@@ -590,19 +591,6 @@ body {
     transition: background 0.2s; margin-top: 10px;
 }
 .modal-apply-btn:hover { background: #059669; }
-
-/* Action Sidebar */
-.action-sidebar {
-    position: fixed;
-    top: 108px;
-    right: 36px;
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
-    align-items: stretch;
-    height: 90px;
-    z-index: 10;
-}
 
 .action-btn {
     width: 90px;
@@ -1010,4 +998,90 @@ body {
     color: #333;
     line-height: 1.4;
     word-break: break-word;
+}
+
+/* =========================================
+   NEW TWO-COLUMN LAYOUT
+   ========================================= */
+
+.input-area-wrapper {
+    display: flex;
+    gap: 15px;
+    align-items: stretch;
+    margin-bottom: 4px;
+    width: 100%;
+}
+.input-left-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+/* 1. Make the container wider */
+.input-right-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 170px; /* CHANGED: Increased from 130px */
+    flex-shrink: 0;
+    padding-top: 18px; 
+}
+/* 2. Make the button text bigger */
+.input-right-pane .action-btn {
+    width: 100%;
+    flex: 1;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    font-size: 18px; /* NEW: Bigger text (was 13px) */
+    gap: 8px;        /* NEW: Space between icon and text */
+}
+/* 3. Make the emojis/icons bigger */
+.input-right-pane .action-icon {
+    font-size: 42px; /* NEW: Bigger icons (was 30px) */
+}
+.input-left-pane .ai-section { 
+    margin-bottom: 0; 
+}
+
+/* 1. Make the purple AI container taller and roomier */
+.ai-box {
+    padding: 12px 20px !important;
+    min-height: 64px !important;
+}
+
+/* 2. Make the AI suggestion chips significantly larger */
+.ai-chip {
+    padding: 14px 28px !important; /* Wider and taller */
+    font-size: 20px !important;    /* Much bigger text (was 14px) */
+    border-radius: 12px !important;
+}
+
+/* 3. Slightly increase the inner "Suggestions based on..." text to match the new scale */
+.ai-label .section-label {
+    font-size: 13px !important; 
+}
+
+/* Make the little ✨ sparkle emoji bigger too */
+.ai-label span {
+    font-size: 18px !important;
+}
+
+/* 1. Make the letter keys slightly shorter */
+.key {
+    height: 56px !important; /* Reduced from 72px */
+}
+
+/* 2. Make the number pad keys slightly shorter to match */
+.numpad-key {
+    height: 52px !important; /* Reduced from 64px */
+}
+
+/* 3. Tighten the padding around the whole keyboard box to save more room */
+.keyboard-outer-wrapper {
+    padding: 12px !important; /* Reduced from 18px */
 }

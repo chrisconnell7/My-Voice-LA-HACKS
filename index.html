@@ -9,7 +9,6 @@
 <body>
 <div class="container">
 
-    <!-- Header -->
     <div class="header">
         <div class="header-left">
             <div class="hamburger" onclick="toggleMenu()">☰</div>
@@ -27,24 +26,53 @@
         </div>
     </div>
 
-    <!-- Message Section -->
-    <div class="message-section">
-        <div class="section-label ui-text" data-en="Message">Message</div>
-        <div class="message-row">
-            <div class="message-box">
-                <div class="message-text" id="messageText"><span class="cursor"></span></div>
+    <div class="input-area-wrapper">
+        
+        <div class="input-left-pane">
+            
+            <div class="message-section">
+                <div class="section-label ui-text" data-en="Message">Message</div>
+                <div class="message-row">
+                    <div class="message-box">
+                        <div class="message-text" id="messageText"><span class="cursor"></span></div>
+                    </div>
+                </div>
             </div>
+
+            <div class="ai-section">
+                <div class="section-label ui-text" data-en = "AI suggested Continuations">AI Suggested Continuations</div>
+                <div class="ai-box">
+                    <div class="ai-label">
+                        <span>✨</span>
+                        <div class="section-label ui-text" data-en="Suggestions based on your message">Suggestions based on your message</div>
+                        <div class="ai-spinner" id="aiSpinner"></div>
+                    </div>
+                    <div class="ai-suggestions-row" id="aiSuggestions">
+                        <span class="ai-placeholder ui-text" data-en = "Start typing or selecting phrases to see AI suggestions...">Start typing or selecting phrases to see AI suggestions…</span>
+                    </div>
+                </div>
+            </div>
+            
         </div>
+
+        <div class="input-right-pane">
+            <button class="action-btn clear" onclick="clearMessage()">
+                <div class="action-icon">✕</div>
+                <span class="ui-text" data-en="Clear">Clear</span>
+            </button>
+            <button class="action-btn speak-message" onclick="speakMessage()">
+                <div class="action-icon">💬</div>
+                <span class="ui-text" data-en="Speak">Speak</span>
+            </button>
+        </div>
+        
     </div>
 
-    <!-- Keyboard (toggleable) -->
     <div class="keyboard-section" id="keyboardSection">
         <div class="keyboard-outer-wrapper">
-            <!-- Numpad on the left -->
             <div class="numpad-wrapper">
                 <div class="numpad-grid" id="numpadGrid"></div>
             </div>
-            <!-- Main keyboard -->
             <div class="keyboard-wrapper">
                 <div id="keyboardLangLabel" style="font-size:13px;font-weight:600;color:#7c8ba3;margin-bottom:10px;text-align:center;letter-spacing:0.3px;"></div>
                 <div class="keyboard-rows" id="keyboardRows"></div>
@@ -52,36 +80,16 @@
         </div>
     </div>
 
-    <!-- AI Autofill Section -->
-    <div class="ai-section">
-        <div class="section-label ui-text" data-en = "AI suggested Continuations">AI Suggested Continuations</div>
-        <div class="ai-box">
-            <div class="ai-label">
-                <span>✨</span>
-                <div class="section-label ui-text" data-en="Suggestions based on your message">
-    Suggestions based on your message
-</div>
-                <div class="ai-spinner" id="aiSpinner"></div>
-            </div>
-            <div class="ai-suggestions-row" id="aiSuggestions">
-                <span class="ai-placeholder ui-text" data-en = "Start typing or selecting phrases to see AI suggestions...">Start typing or selecting phrases to see AI suggestions…</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Suggestions -->
     <div class="suggestions-section">
         <div class="section-label ui-text" data-en = "You might want to say">You might want to say:</div>
         <div class="suggestions-grid" id="suggestionsGrid"></div>
     </div>
 
-    <!-- Categories -->
     <div class="categories-section">
         <div class="section-label ui-text" data-en = "Browse by category">Browse by category:</div>
         <div class="categories-grid" id="categoriesGrid"></div>
     </div>
 
-    <!-- Footer -->
     <div class="footer">
         <div class="footer-controls">
             <button class="icon-btn footer-btn" id="autoListenBtn" onclick="window.toggleAutoListen()">
@@ -105,19 +113,6 @@
     
 </div>
 
-<!-- Action Sidebar -->
-<div class="action-sidebar">
-    <button class="action-btn clear" onclick="clearMessage()">
-        <div class="action-icon">✕</div>
-        <span class="ui-text" data-en="Clear">Clear</span>
-    </button>
-    <button class="action-btn speak-message" onclick="speakMessage()">
-        <div class="action-icon">💬</div>
-        <span class="ui-text" data-en="Speak">Speak</span>
-    </button>
-</div>
-
-<!-- Doctor Prompts Modal -->
 <div class="modal-overlay" id="doctorModal">
     <div class="modal">
         <div class="modal-header">
@@ -125,14 +120,12 @@
             <button class="modal-close" onclick="closeDoctorModal()">✕</button>
         </div>
 
-        <!-- Tabs -->
         <div class="doc-tabs">
             <button class="doc-tab active" id="tab-saved" onclick="switchDocTab('saved')">📋 Saved Phrases</button>
             <button class="doc-tab" id="tab-generate" onclick="switchDocTab('generate')">✨ AI Generate</button>
         </div>
 
         <div class="doc-modal-body">
-            <!-- Saved Phrases Panel -->
             <div class="doc-panel active" id="panel-saved">
                 <div style="font-size:13px;color:#7c8ba3;margin-bottom:14px;">Click ▶ to insert a phrase into the message, or 🗑 to delete it.</div>
                 <div class="prompt-list" id="promptList"></div>
@@ -147,7 +140,6 @@
                 <button class="modal-apply-btn" onclick="closeDoctorModal()" style="margin-top:18px;">✅ Done</button>
             </div>
 
-            <!-- AI Generate Panel -->
             <div class="doc-panel" id="panel-generate">
                 <div class="ai-input-section">
                     <div class="ai-input-label">📝 Describe patient context</div>
@@ -185,7 +177,6 @@
     </div>
 </div>
 
-<!-- Menu Drawer -->
 <div class="menu-overlay" id="menuOverlay" onclick="handleMenuOverlayClick(event)">
     <div class="menu-drawer">
         <div class="menu-header">
@@ -225,7 +216,6 @@
     </div>
 </div>
 
-<!-- Language Selection Modal -->
 <div class="lang-modal-overlay" id="langModal">
     <div class="lang-modal">
         <div class="lang-modal-header">
